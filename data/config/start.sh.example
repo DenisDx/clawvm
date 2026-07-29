@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 0007
+
+exec openclaw gateway --port "${OPENCLAW_GATEWAY_PORT:-18789}"

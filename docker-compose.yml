@@ -1,0 +1,26 @@
+services:
+  clawvm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clawvm:latest
+    container_name: clawvm
+    restart: unless-stopped
+    init: true
+    read_only: true
+    shm_size: ${PLAYWRIGHT_SHM_SIZE:-1gb}
+    environment:
+      HOME: /home/clawvm
+      OPENCLAW_HOME: /home/clawvm/.openclaw
+      OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - type: bind
+        source: ./data
+        target: /home/clawvm
+        read_only: false
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,noexec,nosuid,size=16m
+    ports:
+      - "${OPENCLAW_BIND_HOST:-127.0.0.1}:${OPENCLAW_HOST_PORT:-18789}:${OPENCLAW_GATEWAY_PORT:-18789}"

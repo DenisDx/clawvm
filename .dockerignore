@@ -1,0 +1,9 @@
+.git
+.env
+data/
+README.md
+GETTING_STARTED.md
+SAMBA_SETUP.md
+commands.md
+config.sndbx.json5
+docker-compose.yml

@@ -1,0 +1,16 @@
+.env
+data/*
+!data/.gitkeep
+!data/config/
+data/config/*
+!data/config/start.sh.example
+!data/.openclaw/
+data/.openclaw/*
+!data/.openclaw/.gitkeep
+!data/.config/
+!data/.config/openclaw/
+data/.config/openclaw/*
+!data/.config/openclaw/.gitkeep
+!data/.local/
+data/.local/*
+!data/.local/.gitkeep

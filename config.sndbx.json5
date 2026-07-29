@@ -1,0 +1,48 @@
+// Merge this template into the root sndbx config and set CLAWVM_HOST_ROOT to
+// the absolute path of this checkout.
+{
+  sandboxes: {
+    items: {
+      "clawvm": {
+        title: "ClawVM OpenClaw host",
+        image: "clawvm:latest",
+        memory: "${CLAWVM_MEMORY:-4G}",
+        cpus: ${CLAWVM_CPUS:-2},
+        disk_max: "${CLAWVM_DISK_MAX:-20G}",
+        persistent: true,
+        run_at_startup: false,
+        configure_apt_mirror: false,
+        read_only_rootfs: true,
+        shm_size: "${CLAWVM_SHM_SIZE:-1g}",
+        tmpfs: [
+          "/tmp:rw,noexec,nosuid,size=64m",
+          "/run:rw,noexec,nosuid,size=16m",
+        ],
+        shared_directories: [
+          {
+            host_path: "${CLAWVM_HOST_ROOT}/data",
+            guest_path: "/home/clawvm",
+            mount_type: "dir",
+            source_type: "directory",
+            permission: "rw",
+            required: true,
+            create_if_missing: true,
+          },
+        ],
+        port_bindings: [
+          {
+            bind_host: "${CLAWVM_BIND_HOST:-127.0.0.1}",
+            vm_port: ${CLAWVM_GATEWAY_PORT:-18789},
+            publish_port: ${CLAWVM_HOST_PORT:-18789},
+          },
+        ],
+      },
+    },
+  },
+  envids: {
+    "clawvm-env-token": {
+      sandbox: "clawvm",
+      description: "ClawVM environment",
+    },
+  },
+}

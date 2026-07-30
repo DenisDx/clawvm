@@ -37,6 +37,14 @@
             required: true,
             create_if_missing: true,
           },
+          {
+            host_path: "${CLAWVM_HOST_ROOT}/.env",
+            guest_path: "/home/clawvm/.env",
+            mount_type: "file",
+            source_type: "file",
+            permission: "ro",
+            required: false,
+          },
         ],
         port_bindings: [
           {

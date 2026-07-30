@@ -28,6 +28,15 @@ CLAWVM_HTTPS_PORT=8880
 CLAWVM_HTTPS_HOST_PORT=8880
 ```
 
+Create it from the tracked template before the first start. It contains
+`OPENCLAW_GATEWAY_TOKEN`; replace its placeholder with a long random value and
+do not commit the real file:
+
+```bash
+cp .env.example .env
+chmod 0600 .env
+```
+
 ### sndbx only
 
 Use these steps when ClawVM is managed by sndbx:
@@ -56,6 +65,16 @@ CLAWVM_HTTPS_PORT=8880
 CLAWVM_HTTPS_HOST_PORT=8880
 CLAWVM_SSH_BIND_HOST=127.0.0.1
 CLAWVM_SSH_HOST_PORT=2222
+```
+
+For sndbx, create `images/clawvm/.env` from the same template. It is mounted
+read-only at `~/.env` and loaded for the Gateway and interactive `clawvm` Bash
+sessions:
+
+```bash
+cd images/clawvm
+cp .env.example .env
+chmod 0600 .env
 ```
 
 The configured `CLAWVM_GATEWAY_PORT` must match the port used by
@@ -177,3 +196,40 @@ rsync -aAX --numeric-ids data/ /backup/clawvm-data/
 
 Read `README.md` for updates, security boundaries, diagnostics, and detailed
 deployment information.
+
+----------------
+# openclaw setup:
+
+Run the OpenClaw setup wizard from the ClawVM console:
+
+```bash
+openclaw setup
+```
+
+For this deployment, keep the Gateway private and let Caddy provide HTTPS:
+
+- Bind the Gateway to loopback (`127.0.0.1` or `loopback`).
+- Use port `18789`, or the value configured as `OPENCLAW_GATEWAY_PORT`.
+- Disable `gateway.tls`. Do not configure a certificate or private key in
+	OpenClaw: Caddy terminates TLS on port `8880` and proxies to the loopback
+	Gateway.
+- Keep OpenClaw's normal token and browser-device approval enabled for remote
+	Control UI access.
+
+After the wizard, verify the resulting Gateway configuration includes the
+following TLS setting:
+
+```json5
+{
+	gateway: {
+		tls: {
+			enabled: false,
+		},
+	},
+}
+```
+
+Open the Control UI only through Caddy at
+`https://<CLAWVM_HTTPS_HOST>:8880/`. Do not expose the Gateway port directly,
+and do not enable OpenClaw trusted-proxy mode: the supplied Caddyfile removes
+forwarded headers and presents Caddy as a direct loopback client.

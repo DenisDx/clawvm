@@ -48,10 +48,15 @@ general runtime capability.
 
 ```bash
 cp .env.example .env
+chmod 0600 .env
 docker compose build
 docker compose up -d
 docker compose exec clawvm bash
 ```
+
+Replace `OPENCLAW_GATEWAY_TOKEN` in `.env` with a long random value before
+starting. The private file is mounted read-only at `~/.env` and loaded for the
+Gateway and interactive `clawvm` Bash sessions; it is ignored by Git.
 
 The initial service is intentionally idle and console-accessible. In the shell,
 install OpenClaw with its official current local-prefix installer. It uses the

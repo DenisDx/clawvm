@@ -135,8 +135,18 @@ RUN groupmod --new-name clawvm node \
     && chown --recursive clawvm:clawvm /home/clawvm
 
 COPY docker/entrypoint.sh /usr/local/bin/clawvm-entrypoint
+COPY docker/load-clawvm-env.sh /usr/local/lib/clawvm/load-env.sh
 COPY docker/openclaw /usr/local/bin/openclaw
-RUN chmod 0755 /usr/local/bin/clawvm-entrypoint /usr/local/bin/openclaw
+RUN chmod 0755 /usr/local/bin/clawvm-entrypoint /usr/local/bin/openclaw \
+    && printf '%s\n' \
+        'if [[ -r /usr/local/lib/clawvm/load-env.sh ]]; then' \
+        '    source /usr/local/lib/clawvm/load-env.sh' \
+        'fi' \
+        >> /etc/bash.bashrc \
+    && printf '%s\n' \
+        'source /usr/local/lib/clawvm/load-env.sh' \
+        > /etc/profile.d/clawvm-env.sh \
+    && chmod 0644 /usr/local/lib/clawvm/load-env.sh /etc/profile.d/clawvm-env.sh
 
 COPY app.py /opt/sndbx-image/app.py
 RUN chmod 0755 /opt/sndbx-image/app.py

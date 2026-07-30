@@ -9,6 +9,8 @@ services:
     init: true
     read_only: true
     shm_size: ${PLAYWRIGHT_SHM_SIZE:-1gb}
+    env_file:
+      - .env
     environment:
       HOME: /home/clawvm
       OPENCLAW_HOME: /home/clawvm/.openclaw
@@ -21,6 +23,10 @@ services:
         source: ./data
         target: /home/clawvm
         read_only: false
+      - type: bind
+        source: ./.env
+        target: /home/clawvm/.env
+        read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
       - /run:rw,noexec,nosuid,size=16m

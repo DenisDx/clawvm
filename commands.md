@@ -28,6 +28,21 @@ curl -fsSL https://openclaw.ai/install-cli.sh | bash
 Use OpenClaw's official documented update flow to update OpenClaw. The installed
 files remain below `/home/clawvm`, which is the host `data/` directory.
 
+## LAN HTTPS Control UI
+
+Set the selected deployment's `CLAWVM_HTTPS_BIND_HOST=0.0.0.0` and
+`CLAWVM_HTTPS_HOST=<host LAN IP>`, recreate it, then open:
+
+```text
+https://<host LAN IP>:8880/
+```
+
+Install the Caddy root certificate once per trusted client:
+
+```bash
+scp -P 2222 clawvm@<host LAN IP>:.local/share/caddy/pki/authorities/local/root.crt ./clawvm-caddy-root.crt
+```
+
 ## Browser automation
 
 ```bash
@@ -82,3 +97,10 @@ docker build -t clawvm:latest .
 Merge `config.sndbx.json5` into the root configuration, set
 `CLAWVM_HOST_ROOT`, then start the `clawvm` sandbox with the normal sndbx
 operator command or UI.
+
+With public keys configured in the sandbox's `ssh_keys` list, connect through
+the default loopback publication:
+
+```bash
+ssh -p 2222 clawvm@127.0.0.1
+```

@@ -2,4 +2,13 @@
 set -Eeuo pipefail
 umask 0007
 
-exec openclaw gateway --port "${OPENCLAW_GATEWAY_PORT:-18789}"
+proxy_config="${HOME}/config/Caddyfile"
+if [[ ! -f "${proxy_config}" ]]; then
+	cp "${HOME}/config/Caddyfile.example" "${proxy_config}"
+fi
+
+openclaw gateway --bind loopback --port "${OPENCLAW_GATEWAY_PORT:-18789}" &
+gateway_pid=$!
+trap 'kill "${gateway_pid}" 2>/dev/null || true; wait "${gateway_pid}" 2>/dev/null || true' EXIT
+
+caddy run --config "${proxy_config}" --adapter caddyfile

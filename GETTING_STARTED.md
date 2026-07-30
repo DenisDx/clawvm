@@ -21,9 +21,11 @@ docker compose exec clawvm bash
 Docker-only settings belong in `.env`:
 
 ```text
-OPENCLAW_BIND_HOST=127.0.0.1
-OPENCLAW_HOST_PORT=18789
 OPENCLAW_GATEWAY_PORT=18789
+CLAWVM_HTTPS_BIND_HOST=127.0.0.1
+CLAWVM_HTTPS_HOST=127.0.0.1
+CLAWVM_HTTPS_PORT=8880
+CLAWVM_HTTPS_HOST_PORT=8880
 ```
 
 ### sndbx only
@@ -35,6 +37,8 @@ cd /<pathto>/sndbx
 docker build -t clawvm:latest images/clawvm
 ```
 
+OR use webUI for building (sndbx restart may be required)
+
 The active root `config.json5` already registers the `clawvm` sandbox and the
 `clawvm-env-token` environment. Start the sandbox through the sndbx Web UI or
 the existing MCP `sandbox_start` operation, then open an sndbx console for that
@@ -45,13 +49,27 @@ sandbox. When using a different sndbx installation, merge
 sndbx-only port settings belong in the root sndbx `.env`:
 
 ```text
-CLAWVM_BIND_HOST=127.0.0.1
-CLAWVM_HOST_PORT=18789
 CLAWVM_GATEWAY_PORT=18789
+CLAWVM_HTTPS_BIND_HOST=127.0.0.1
+CLAWVM_HTTPS_HOST=127.0.0.1
+CLAWVM_HTTPS_PORT=8880
+CLAWVM_HTTPS_HOST_PORT=8880
+CLAWVM_SSH_BIND_HOST=127.0.0.1
+CLAWVM_SSH_HOST_PORT=2222
 ```
 
 The configured `CLAWVM_GATEWAY_PORT` must match the port used by
 `data/config/start.sh`.
+
+To enable key-only SSH, add public keys to `ssh_keys` in the `clawvm` sandbox
+definition, restart the sandbox, then connect from the host:
+
+```bash
+ssh -p 2222 clawvm@127.0.0.1
+```
+
+This is an sndbx-only feature. It provisions SSH but does not install or start
+OpenClaw.
 
 ## 2. Install OpenClaw in either mode
 
@@ -92,12 +110,23 @@ For sndbx, restart the `clawvm` sandbox through its Web UI or existing MCP
 stop/start operations. Do not use `docker compose` to control an sndbx-managed
 sandbox.
 
-## 4. Open the gateway
+## 4. Open the HTTPS Control UI
 
-The default gateway URL is `http://127.0.0.1:18789/` in both modes. Change only
-the Docker `.env` variables for Docker Compose, or only the root sndbx `.env`
-variables for sndbx, then restart the selected deployment. Use a non-loopback
-bind address only when intentional LAN access is required.
+The default URL is `https://127.0.0.1:8880/` in both modes. The Gateway itself
+stays on loopback port `18789`; Caddy provides the HTTPS endpoint and proxies
+its UI and WebSocket as one origin.
+
+For a LAN URL such as `https://192.168.1.111:8880/`, set
+`CLAWVM_HTTPS_BIND_HOST=0.0.0.0` and set `CLAWVM_HTTPS_HOST` to the host LAN IP
+in the `.env` for the selected deployment mode. Recreate the service or
+sandbox. Install the Caddy root certificate once on each trusted client:
+
+```bash
+scp -P 2222 clawvm@192.168.1.111:.local/share/caddy/pki/authorities/local/root.crt ./clawvm-caddy-root.crt
+```
+
+Import that certificate into the client trusted-root store before opening the
+URL. Do not use insecure HTTP or disable OpenClaw device authentication.
 
 ## 5. Share files safely in either mode
 

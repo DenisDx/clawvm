@@ -12,6 +12,7 @@
         persistent: true,
         run_at_startup: false,
         configure_apt_mirror: false,
+        ssh_keys: [],
         read_only_rootfs: true,
         shm_size: "${CLAWVM_SHM_SIZE:-1g}",
         tmpfs: [
@@ -31,9 +32,14 @@
         ],
         port_bindings: [
           {
-            bind_host: "${CLAWVM_BIND_HOST:-127.0.0.1}",
-            vm_port: ${CLAWVM_GATEWAY_PORT:-18789},
-            publish_port: ${CLAWVM_HOST_PORT:-18789},
+            bind_host: "${CLAWVM_SSH_BIND_HOST:-127.0.0.1}",
+            vm_port: 22,
+            publish_port: ${CLAWVM_SSH_HOST_PORT:-2222}
+          },
+          {
+            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}",
+            vm_port: ${CLAWVM_HTTPS_PORT:-8880},
+            publish_port: ${CLAWVM_HTTPS_HOST_PORT:-8880},
           },
         ],
       },

@@ -13,6 +13,8 @@ services:
       HOME: /home/clawvm
       OPENCLAW_HOME: /home/clawvm/.openclaw
       OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
+      CLAWVM_HTTPS_HOST: ${CLAWVM_HTTPS_HOST:-127.0.0.1}
+      CLAWVM_HTTPS_PORT: ${CLAWVM_HTTPS_PORT:-8880}
       TZ: ${TZ:-UTC}
     volumes:
       - type: bind
@@ -23,4 +25,4 @@ services:
       - /tmp:rw,noexec,nosuid,size=64m
       - /run:rw,noexec,nosuid,size=16m
     ports:
-      - "${OPENCLAW_BIND_HOST:-127.0.0.1}:${OPENCLAW_HOST_PORT:-18789}:${OPENCLAW_GATEWAY_PORT:-18789}"
+      - "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}:${CLAWVM_HTTPS_HOST_PORT:-8880}:${CLAWVM_HTTPS_PORT:-8880}"

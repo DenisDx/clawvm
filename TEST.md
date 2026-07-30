@@ -73,7 +73,32 @@ docker compose down
 Expected: the service remains console-accessible and PID 1 is the entrypoint
 fallback running `sleep infinity`.
 
-## 5. OpenClaw persistence
+## 5. sndbx SSH hook
+
+Add a test public key to the `clawvm` sandbox `ssh_keys` list, start or restart
+the sandbox through sndbx, then run from the host:
+
+```bash
+ssh -p 2222 clawvm@127.0.0.1 id
+```
+
+Expected: key-only SSH authenticates as `clawvm` (UID/GID `1000:1000`). The
+hook must not install or start OpenClaw.
+
+## 6. HTTPS reverse proxy
+
+After installing OpenClaw and creating `data/config/start.sh`, set
+`CLAWVM_HTTPS_HOST=127.0.0.1`, start the selected deployment, and run:
+
+```bash
+curl --fail --cacert data/.local/share/caddy/pki/authorities/local/root.crt https://127.0.0.1:8880/
+```
+
+Expected: Caddy serves the OpenClaw Control UI through HTTPS. The Gateway must
+remain unexposed on guest port `18789`; only Caddy's configured HTTPS port is
+published.
+
+## 7. OpenClaw persistence
 
 Install OpenClaw with the official local-prefix installer, create an OpenClaw
 workspace file, and configure `data/config/start.sh`. Stop the service, copy
@@ -81,14 +106,14 @@ workspace file, and configure `data/config/start.sh`. Stop the service, copy
 start that checkout. The configuration, workspace, installed OpenClaw files, and
 startup command must remain available.
 
-## 6. Samba workspace
+## 8. Samba workspace
 
 Follow `SAMBA_SETUP.md`. Verify that a Samba-authorized host user can edit a file
 created by OpenClaw and that OpenClaw can edit a file created through the Samba
 share. Confirm the Samba share cannot browse `data/.openclaw/openclaw.json` or
 other OpenClaw credential paths.
 
-## 7. sndbx
+## 9. sndbx
 
 Build `clawvm:latest`, merge `config.sndbx.json5`, and start the `clawvm`
 sandbox. Verify that `/home/clawvm` is the only persistent writable mount,

@@ -71,14 +71,38 @@ exit
 docker compose restart clawvm
 ```
 
-The sample launch command runs `openclaw gateway` on
-`OPENCLAW_GATEWAY_PORT` (default `18789`). Adjust it when OpenClaw's official
-configuration requires a different documented startup command or port.
-
-By default the published port binds to `127.0.0.1`. Change
-`OPENCLAW_BIND_HOST` in `.env` only when intentional LAN access is required.
+The sample launch command keeps `openclaw gateway` on loopback port `18789` and
+starts Caddy on HTTPS port `8880`. Caddy proxies the Control UI, HTTP endpoints,
+and WebSocket through one origin, so no CORS configuration is needed.
 `PLAYWRIGHT_SHM_SIZE` controls the Docker Compose Chromium shared-memory size
 and defaults to `1gb`.
+
+### LAN HTTPS Control UI
+
+For an HTTPS URL reachable from the LAN, set the host machine's LAN IP in the
+Compose `.env`, then recreate the service:
+
+```text
+CLAWVM_HTTPS_BIND_HOST=0.0.0.0
+CLAWVM_HTTPS_HOST=192.168.1.111
+CLAWVM_HTTPS_PORT=8880
+CLAWVM_HTTPS_HOST_PORT=8880
+```
+
+Open `https://192.168.1.111:8880/` from a LAN client. Caddy uses its internal
+certificate authority because a public CA cannot issue a certificate for a
+private IP. Install Caddy's root certificate once on each trusted client before
+opening the UI:
+
+```bash
+scp -P 2222 clawvm@192.168.1.111:.local/share/caddy/pki/authorities/local/root.crt ./clawvm-caddy-root.crt
+```
+
+Import `clawvm-caddy-root.crt` into that client's trusted root certificate
+store, then connect. Treat the certificate as a trust anchor: distribute it
+only through SSH or another authenticated channel, never through an untrusted
+web download. OpenClaw still requires its normal gateway token and one-time
+browser device approval for remote access.
 
 ## sndbx
 
@@ -95,6 +119,37 @@ sandbox, then use an sndbx console to run the same OpenClaw installation steps
 as in Docker Compose.
 `CLAWVM_SHM_SIZE` controls Chromium shared memory in sndbx and defaults to
 `1g`.
+
+For LAN HTTPS in sndbx, set these root `.env` variables and recreate the
+sandbox after rebuilding the image:
+
+```text
+CLAWVM_HTTPS_BIND_HOST=0.0.0.0
+CLAWVM_HTTPS_HOST=192.168.1.111
+CLAWVM_HTTPS_PORT=8880
+CLAWVM_HTTPS_HOST_PORT=8880
+```
+
+Use the same `https://192.168.1.111:8880/` URL and Caddy root-certificate
+installation procedure as Docker Compose.
+
+### SSH access in sndbx
+
+The sndbx lifecycle hook starts key-only SSH for `clawvm`. Add public keys to
+the sandbox's `ssh_keys` list, then restart or recreate the sandbox:
+
+```json5
+ssh_keys: [
+	"ssh-ed25519 AAAA... operator@example",
+],
+```
+
+By default SSH is published only on `127.0.0.1:2222`. Connect from the host
+with `ssh -p 2222 clawvm@127.0.0.1`. Set `CLAWVM_SSH_BIND_HOST` or
+`CLAWVM_SSH_HOST_PORT` in the root sndbx `.env` only when a different exposure
+is intentional. SSH provisioning is sndbx-only; Docker Compose does not run
+the lifecycle hook. The hook never installs, updates, configures, or starts
+OpenClaw.
 
 ## Updates and backup
 

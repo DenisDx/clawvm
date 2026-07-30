@@ -1,0 +1,12 @@
+{
+    auto_https disable_redirects
+}
+
+https://{$CLAWVM_HTTPS_HOST}:{$CLAWVM_HTTPS_PORT} {
+    tls internal
+    reverse_proxy 127.0.0.1:{$OPENCLAW_GATEWAY_PORT} {
+        header_up -X-Forwarded-For
+        header_up -X-Forwarded-Host
+        header_up -X-Forwarded-Proto
+    }
+}

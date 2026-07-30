@@ -24,6 +24,7 @@ RUN apt-get update \
         build-essential \
         bzip2 \
         ca-certificates \
+        caddy \
         curl \
         default-mysql-client \
         dnsutils \
@@ -52,6 +53,7 @@ RUN apt-get update \
         netcat-openbsd \
         nmap \
         openssh-client \
+        openssh-server \
         openssl \
         p7zip-full \
         parallel \
@@ -103,9 +105,19 @@ RUN apt-get update \
     && ln --symbolic /usr/bin/fdfind /usr/local/bin/fd \
     && npm install --global "playwright@${PLAYWRIGHT_VERSION}" \
     && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright playwright install --with-deps chromium \
+    && printf '%s\n' \
+        'PermitRootLogin no' \
+        'PasswordAuthentication no' \
+        'KbdInteractiveAuthentication no' \
+        'UsePAM no' \
+        'AllowUsers clawvm' \
+        > /etc/ssh/sshd_config.d/clawvm.conf \
     && rm -rf /var/lib/apt/lists/* "/tmp/yq_linux_${architecture}" "/tmp/${archive}"
 
 ENV XDG_CACHE_HOME=/home/clawvm/.cache
+
+ENV XDG_CONFIG_HOME=/home/clawvm/.config \
+    XDG_DATA_HOME=/home/clawvm/.local/share
 
 RUN groupmod --new-name clawvm node \
     && usermod --login clawvm --home /home/clawvm --shell /bin/bash node \
@@ -114,6 +126,9 @@ RUN groupmod --new-name clawvm node \
 
 COPY docker/entrypoint.sh /usr/local/bin/clawvm-entrypoint
 RUN chmod 0755 /usr/local/bin/clawvm-entrypoint
+
+COPY app.py /opt/sndbx-image/app.py
+RUN chmod 0755 /opt/sndbx-image/app.py
 
 USER clawvm
 WORKDIR /home/clawvm

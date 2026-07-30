@@ -1,5 +1,6 @@
 {
     auto_https disable_redirects
+    default_sni {$CLAWVM_HTTPS_HOST}
 }
 
 https://{$CLAWVM_HTTPS_HOST}:{$CLAWVM_HTTPS_PORT} {

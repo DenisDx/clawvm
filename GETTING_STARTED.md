@@ -145,6 +145,10 @@ trusted client:
 
 ```bash
 scp -P 2222 clawvm@192.168.1.111:.local/share/caddy/pki/authorities/local/root.crt ./clawvm-caddy-root.crt
+
+# OR copy it to the ~ folder for manual install
+cp ~/.local/share/caddy/pki/authorities/local/root.crt ~/clawvm-caddy-root.crt
+chmod 0644 ~/clawvm-caddy-root.crt
 ```
 
 Import that certificate into the client trusted-root store before opening the

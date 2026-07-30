@@ -24,8 +24,9 @@ RUN apt-get update \
         build-essential \
         bzip2 \
         ca-certificates \
-        caddy \
         curl \
+        debian-archive-keyring \
+        debian-keyring \
         default-mysql-client \
         dnsutils \
         entr \
@@ -90,6 +91,15 @@ RUN apt-get update \
         yamllint \
         zip \
         zstd \
+    && curl --fail --location --silent --show-error \
+        --output /tmp/caddy-stable.gpg \
+        https://dl.cloudsmith.io/public/caddy/stable/gpg.key \
+    && gpg --dearmor --output /usr/share/keyrings/caddy-stable-archive-keyring.gpg /tmp/caddy-stable.gpg \
+    && curl --fail --location --silent --show-error \
+        --output /etc/apt/sources.list.d/caddy-stable.list \
+        https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends caddy \
     && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && locale-gen \
     && corepack enable \
@@ -112,7 +122,7 @@ RUN apt-get update \
         'UsePAM no' \
         'AllowUsers clawvm' \
         > /etc/ssh/sshd_config.d/clawvm.conf \
-    && rm -rf /var/lib/apt/lists/* "/tmp/yq_linux_${architecture}" "/tmp/${archive}"
+    && rm -rf /var/lib/apt/lists/* /tmp/caddy-stable.gpg "/tmp/yq_linux_${architecture}" "/tmp/${archive}"
 
 ENV XDG_CACHE_HOME=/home/clawvm/.cache
 

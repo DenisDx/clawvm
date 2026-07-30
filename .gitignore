@@ -9,6 +9,7 @@ data/config/*
 data/.openclaw/*
 !data/.openclaw/.gitkeep
 !data/.config/
+data/.config/*
 !data/.config/openclaw/
 data/.config/openclaw/*
 !data/.config/openclaw/.gitkeep

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 umask 0007
+export PATH="${HOME}/.openclaw/bin:${PATH}"
 
 proxy_config="${HOME}/config/Caddyfile"
 if [[ ! -f "${proxy_config}" ]]; then

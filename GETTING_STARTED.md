@@ -84,8 +84,27 @@ curl -fsSL https://openclaw.ai/install-cli.sh | bash
 openclaw --help
 ```
 
+The current ClawVM image provides a stable `openclaw` launcher that resolves
+the installer-managed versioned CLI path. An existing container created before
+that image rebuild needs this command in its current shell:
+
+```bash
+export PATH="$HOME/.openclaw/bin:$PATH"
+openclaw --help
+```
+
+The supplied `start.sh.example` includes that path, so copying it after the
+installation makes future starts work without rebuilding the current container.
+
 Complete OpenClaw's own onboarding and configure the channels, authentication,
 workspace, and gateway settings that you need.
+
+Before the first gateway start, run its setup command. Without this, OpenClaw
+exits with a missing-configuration error and Caddy has no upstream to proxy:
+
+```bash
+openclaw setup
+```
 
 ## 3. Make OpenClaw start after restart
 
@@ -119,7 +138,10 @@ its UI and WebSocket as one origin.
 For a LAN URL such as `https://192.168.1.111:8880/`, set
 `CLAWVM_HTTPS_BIND_HOST=0.0.0.0` and set `CLAWVM_HTTPS_HOST` to the host LAN IP
 in the `.env` for the selected deployment mode. Recreate the service or
-sandbox. Install the Caddy root certificate once on each trusted client:
+sandbox. In sndbx, port bindings are immutable for an existing Docker
+container, so the `clawvm` sandbox must be removed and created again instead
+of only stopped and started. Install the Caddy root certificate once on each
+trusted client:
 
 ```bash
 scp -P 2222 clawvm@192.168.1.111:.local/share/caddy/pki/authorities/local/root.crt ./clawvm-caddy-root.crt

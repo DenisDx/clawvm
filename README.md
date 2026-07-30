@@ -62,6 +62,19 @@ curl -fsSL https://openclaw.ai/install-cli.sh | bash
 openclaw --help
 ```
 
+ClawVM resolves the installer-managed versioned CLI directory through its
+stable `/usr/local/bin/openclaw` launcher. For an installation made with an
+older ClawVM image, add the installer-managed CLI directory to the current
+shell before using it:
+
+```bash
+export PATH="$HOME/.openclaw/bin:$PATH"
+openclaw --help
+```
+
+The supplied startup script applies this path automatically after it is copied
+to `~/config/start.sh`.
+
 Create the persistent launch command after completing the OpenClaw setup:
 
 ```bash
@@ -103,6 +116,11 @@ store, then connect. Treat the certificate as a trust anchor: distribute it
 only through SSH or another authenticated channel, never through an untrusted
 web download. OpenClaw still requires its normal gateway token and one-time
 browser device approval for remote access.
+
+Run `openclaw setup` in the VM before the first gateway start. Otherwise the
+Gateway exits as unconfigured and Caddy returns an upstream error. In sndbx,
+remove and recreate the sandbox after changing HTTPS port variables because
+Docker cannot change published ports on an existing container.
 
 ## sndbx
 

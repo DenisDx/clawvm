@@ -125,7 +125,8 @@ RUN groupmod --new-name clawvm node \
     && chown --recursive clawvm:clawvm /home/clawvm
 
 COPY docker/entrypoint.sh /usr/local/bin/clawvm-entrypoint
-RUN chmod 0755 /usr/local/bin/clawvm-entrypoint
+COPY docker/openclaw /usr/local/bin/openclaw
+RUN chmod 0755 /usr/local/bin/clawvm-entrypoint /usr/local/bin/openclaw
 
 COPY app.py /opt/sndbx-image/app.py
 RUN chmod 0755 /opt/sndbx-image/app.py

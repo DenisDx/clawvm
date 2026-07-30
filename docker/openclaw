@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+for candidate in "${OPENCLAW_HOME:-${HOME}/.openclaw}"/tools/node-*/bin/openclaw; do
+    if [[ -x "${candidate}" ]]; then
+        exec "${candidate}" "$@"
+    fi
+done
+
+printf '%s\n' 'openclaw is not installed; run the official installer first.' >&2
+exit 127

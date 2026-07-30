@@ -28,6 +28,14 @@ curl -fsSL https://openclaw.ai/install-cli.sh | bash
 Use OpenClaw's official documented update flow to update OpenClaw. The installed
 files remain below `/home/clawvm`, which is the host `data/` directory.
 
+For a shell in an existing container created before the stable launcher was
+added:
+
+```bash
+export PATH="$HOME/.openclaw/bin:$PATH"
+openclaw --help
+```
+
 ## LAN HTTPS Control UI
 
 Set the selected deployment's `CLAWVM_HTTPS_BIND_HOST=0.0.0.0` and

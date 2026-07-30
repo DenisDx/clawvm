@@ -13,6 +13,14 @@
         run_at_startup: false,
         configure_apt_mirror: false,
         ssh_keys: [],
+        runtime_contract: {
+          version: 1,
+          environment: {
+            CLAWVM_HTTPS_HOST: "${CLAWVM_HTTPS_HOST:-127.0.0.1}",
+            CLAWVM_HTTPS_PORT: "${CLAWVM_HTTPS_PORT:-8880}",
+            OPENCLAW_GATEWAY_PORT: "${CLAWVM_GATEWAY_PORT:-18789}",
+          },
+        },
         read_only_rootfs: true,
         shm_size: "${CLAWVM_SHM_SIZE:-1g}",
         tmpfs: [

@@ -8,8 +8,29 @@ if [[ ! -f "${proxy_config}" ]]; then
 	cp "${HOME}/config/Caddyfile.example" "${proxy_config}"
 fi
 
-openclaw gateway --bind loopback --port "${OPENCLAW_GATEWAY_PORT:-18789}" &
-gateway_pid=$!
-trap 'kill "${gateway_pid}" 2>/dev/null || true; wait "${gateway_pid}" 2>/dev/null || true' EXIT
+# Restart the Gateway if it exits while Caddy remains available.
+gateway_loop() {
+	while true; do
+		if openclaw gateway --bind loopback --port "${OPENCLAW_GATEWAY_PORT:-18789}"; then
+			gateway_status=0
+		else
+			gateway_status=$?
+		fi
+
+		printf 'OpenClaw Gateway exited with status %s; restarting in 2 seconds.\n' "${gateway_status}" >&2
+		sleep 2
+	done
+}
+
+gateway_loop &
+gateway_supervisor_pid=$!
+
+# Stop the background Gateway supervisor with the container.
+cleanup() {
+	kill "${gateway_supervisor_pid}" 2>/dev/null || true
+	wait "${gateway_supervisor_pid}" 2>/dev/null || true
+}
+
+trap cleanup EXIT INT TERM
 
 caddy run --config "${proxy_config}" --adapter caddyfile

@@ -136,6 +136,8 @@ chmod 0750 ~/config/start.sh
 
 The supplied script uses gateway port `18789`. Edit `~/config/start.sh` when
 your official OpenClaw setup uses a different documented command or port.
+It restarts the Gateway automatically when OpenClaw stops or restarts it, while
+Caddy remains available on port `8880`.
 
 Restart using only the command appropriate for the selected mode:
 

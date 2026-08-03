@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 
-env_file="${HOME}/.env"
-
-if [[ -r "${env_file}" ]]; then
-    readonly deployment_env_names=(
+# Load the user-owned environment file without overriding deployment values.
+load_clawvm_env() {
+    local env_file="${HOME}/.env"
+    local env_name
+    local -a deployment_env_names=(
         CLAWVM_HTTPS_HOST
         CLAWVM_HTTPS_PORT
         OPENCLAW_GATEWAY_PORT
     )
-    declare -A deployment_env_values=()
+    local -A deployment_env_values=()
+
+    if [[ ! -r "${env_file}" ]]; then
+        return
+    fi
 
     for env_name in "${deployment_env_names[@]}"; do
         if [[ -v "${env_name}" ]]; then
@@ -24,4 +29,7 @@ if [[ -r "${env_file}" ]]; then
     for env_name in "${!deployment_env_values[@]}"; do
         export "${env_name}=${deployment_env_values[${env_name}]}"
     done
-fi
+}
+
+load_clawvm_env
+unset -f load_clawvm_env

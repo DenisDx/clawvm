@@ -8,17 +8,49 @@ if [[ ! -f "${proxy_config}" ]]; then
 	cp "${HOME}/config/Caddyfile.example" "${proxy_config}"
 fi
 
-# Restart the Gateway if it exits while Caddy remains available.
+gateway_port="${OPENCLAW_GATEWAY_PORT:-18789}"
+gateway_restart_grace_seconds="${OPENCLAW_GATEWAY_RESTART_GRACE_SECONDS:-10}"
+
+# Return success while a process owns the Gateway loopback port.
+gateway_is_listening() {
+	ss -H -ltn "sport = :${gateway_port}" | grep -q .
+}
+
+# Give an OpenClaw-managed restart time to bind the Gateway port.
+wait_for_external_gateway() {
+	local elapsed_seconds=0
+
+	while (( elapsed_seconds < gateway_restart_grace_seconds )); do
+		if gateway_is_listening; then
+			return 0
+		fi
+
+		sleep 1
+		((elapsed_seconds += 1))
+	done
+
+	return 1
+}
+
+# Recover the Gateway only when OpenClaw did not start its own replacement.
 gateway_loop() {
 	while true; do
-		if openclaw gateway --bind loopback --port "${OPENCLAW_GATEWAY_PORT:-18789}"; then
+		if openclaw gateway --bind loopback --port "${gateway_port}"; then
 			gateway_status=0
 		else
 			gateway_status=$?
 		fi
 
-		printf 'OpenClaw Gateway exited with status %s; restarting in 2 seconds.\n' "${gateway_status}" >&2
-		sleep 2
+		printf 'OpenClaw Gateway exited with status %s; waiting for a replacement.\n' "${gateway_status}" >&2
+		if wait_for_external_gateway; then
+			printf 'OpenClaw Gateway replacement is listening on port %s.\n' "${gateway_port}" >&2
+			while gateway_is_listening; do
+				sleep 1
+			done
+			printf 'OpenClaw Gateway replacement stopped; starting recovery.\n' >&2
+		else
+			printf 'No OpenClaw Gateway replacement appeared; starting recovery.\n' >&2
+		fi
 	done
 }
 

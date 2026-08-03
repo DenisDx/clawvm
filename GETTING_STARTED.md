@@ -28,6 +28,10 @@ CLAWVM_HTTPS_PORT=8880
 CLAWVM_HTTPS_HOST_PORT=8880
 ```
 
+Both deployment modes also publish general-purpose ports `8881` through `8885`
+with identical host and VM port numbers. They use `CLAWVM_HTTPS_BIND_HOST`, so
+set it to `0.0.0.0` only when LAN access to those services is intended.
+
 Create it from the tracked template before the first start. It contains
 `OPENCLAW_GATEWAY_TOKEN`; replace its placeholder with a long random value and
 do not commit the real file:
@@ -66,6 +70,9 @@ CLAWVM_HTTPS_HOST_PORT=8880
 CLAWVM_SSH_BIND_HOST=127.0.0.1
 CLAWVM_SSH_HOST_PORT=2222
 ```
+
+The same general-purpose ports `8881` through `8885` are published through the
+configured `CLAWVM_HTTPS_BIND_HOST`.
 
 For sndbx, create `images/clawvm/.env` from the same template. It is mounted
 read-only at `~/.env` and loaded for the Gateway and interactive `clawvm` Bash

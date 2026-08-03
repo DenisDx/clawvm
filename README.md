@@ -95,6 +95,10 @@ and WebSocket through one origin, so no CORS configuration is needed.
 `PLAYWRIGHT_SHM_SIZE` controls the Docker Compose Chromium shared-memory size
 and defaults to `1gb`.
 
+In addition to the HTTPS endpoint, ClawVM publishes general-purpose ports
+`8881` through `8885` with the same host and container port number. They use
+the HTTPS bind host setting, so they remain loopback-only by default.
+
 ### LAN HTTPS Control UI
 
 For an HTTPS URL reachable from the LAN, set the host machine's LAN IP in the
@@ -155,6 +159,9 @@ CLAWVM_HTTPS_HOST_PORT=8880
 
 Use the same `https://192.168.1.111:8880/` URL and Caddy root-certificate
 installation procedure as Docker Compose.
+
+The same sandbox publication also reserves general-purpose ports `8881`
+through `8885`, mapped identically on the host and in the VM.
 
 ### SSH access in sndbx
 

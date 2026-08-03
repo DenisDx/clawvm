@@ -95,10 +95,22 @@ curl --fail --cacert data/.local/share/caddy/pki/authorities/local/root.crt http
 ```
 
 Expected: Caddy serves the OpenClaw Control UI through HTTPS. The Gateway must
-remain unexposed on guest port `18789`; only Caddy's configured HTTPS port is
-published.
+remain unexposed on guest port `18789`; Caddy's configured HTTPS port and the
+general-purpose `8881` through `8885` ports are published.
 
-## 7. OpenClaw persistence
+## 7. General-purpose port publication
+
+Render the Docker Compose configuration and verify the six consecutive port
+rules:
+
+```bash
+docker compose config | grep -E '888[0-5]'
+```
+
+Expected: port `8880` is the HTTPS publication and ports `8881` through `8885`
+are each mapped identically between host and VM on the configured bind host.
+
+## 8. OpenClaw persistence
 
 Install OpenClaw with the official local-prefix installer, create an OpenClaw
 workspace file, and configure `data/config/start.sh`. Stop the service, copy
@@ -106,14 +118,14 @@ workspace file, and configure `data/config/start.sh`. Stop the service, copy
 start that checkout. The configuration, workspace, installed OpenClaw files, and
 startup command must remain available.
 
-## 8. Samba workspace
+## 9. Samba workspace
 
 Follow `SAMBA_SETUP.md`. Verify that a Samba-authorized host user can edit a file
 created by OpenClaw and that OpenClaw can edit a file created through the Samba
 share. Confirm the Samba share cannot browse `data/.openclaw/openclaw.json` or
 other OpenClaw credential paths.
 
-## 9. sndbx
+## 10. sndbx
 
 Build `clawvm:latest`, merge `config.sndbx.json5`, and start the `clawvm`
 sandbox. Verify that `/home/clawvm` is the only persistent writable mount,

@@ -199,6 +199,17 @@ rsync -aAX --numeric-ids data/ /backup/clawvm-data/
 Restore the directory to `data/` in a fresh checkout, preserve its metadata,
 and start the same or a compatible ClawVM image.
 
+If `data/` was copied without preserving its owners, permissions, or ACLs, run
+the recovery script from the ClawVM checkout before starting the container:
+
+```bash
+sudo ./run_after_restore.sh
+```
+
+It restores the fixed ClawVM UID/GID (`1000:1000`), private data permissions,
+the executable startup script, and the optional `clawvm-share` workspace ACL.
+It does not modify file contents.
+
 ## Diagnostics
 
 ```bash

@@ -18,3 +18,7 @@ data/.local/*
 !data/.local/.gitkeep
 
 __pycache__/
+
+!data/.openclaw/workspace/
+data/.openclaw/workspace/*
+!data/.openclaw/workspace/AGENTS.md

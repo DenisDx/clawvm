@@ -38,6 +38,7 @@ def ssh_keys(context: dict) -> list[str]:
 
 def write_authorized_keys(keys: list[str]) -> None:
     """Write SSH keys for clawvm with permissions accepted by sshd."""
+    os.chmod(HOME_DIRECTORY, 0o750)
     AUTHORIZED_KEYS_PATH.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     AUTHORIZED_KEYS_PATH.write_text("\n".join(keys) + "\n", encoding="utf-8")
     os.chmod(AUTHORIZED_KEYS_PATH.parent, 0o700)

@@ -131,6 +131,7 @@ ENV XDG_CONFIG_HOME=/home/clawvm/.config \
 
 RUN groupmod --new-name clawvm node \
     && usermod --login clawvm --home /home/clawvm --shell /bin/bash node \
+    && usermod --password "$(openssl passwd -6 "$(openssl rand -hex 32)")" clawvm \
     && mkdir --parents /home/clawvm/.cache /home/clawvm/config /home/clawvm/.openclaw/workspace \
     && chown --recursive clawvm:clawvm /home/clawvm
 

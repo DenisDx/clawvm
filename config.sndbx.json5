@@ -13,6 +13,8 @@
         run_at_startup: false,
         configure_apt_mirror: false,
         ssh_keys: [],
+        ssh_user: "clawvm",
+        ssh_setup_via_image_hook: true,
         runtime_contract: {
           version: 1,
           environment: {
@@ -48,37 +50,37 @@
         ],
         port_bindings: [
           {
-            bind_host: "${CLAWVM_SSH_BIND_HOST:-127.0.0.1}",
+            bind_host: "${CLAWVM_SSH_BIND_HOST:-0.0.0.0}",
             vm_port: 22,
             publish_port: ${CLAWVM_SSH_HOST_PORT:-2222}
           },
           {
-            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}",
+            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
             vm_port: ${CLAWVM_HTTPS_PORT:-8880},
             publish_port: ${CLAWVM_HTTPS_HOST_PORT:-8880},
           },
           {
-            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}",
+            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
             vm_port: 8881,
             publish_port: 8881,
           },
           {
-            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}",
+            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
             vm_port: 8882,
             publish_port: 8882,
           },
           {
-            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}",
+            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
             vm_port: 8883,
             publish_port: 8883,
           },
           {
-            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}",
+            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
             vm_port: 8884,
             publish_port: 8884,
           },
           {
-            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-127.0.0.1}",
+            bind_host: "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
             vm_port: 8885,
             publish_port: 8885,
           },

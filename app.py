@@ -10,6 +10,7 @@ from pathlib import Path
 
 HOME_DIRECTORY = Path("/home/clawvm")
 AUTHORIZED_KEYS_PATH = HOME_DIRECTORY / ".ssh" / "authorized_keys"
+EXTERNAL_HOME_PATHS = (HOME_DIRECTORY / ".env",)
 
 
 def load_context() -> dict:
@@ -34,6 +35,19 @@ def ssh_keys(context: dict) -> list[str]:
     return list(dict.fromkeys(
         key.strip() for key in configured_keys if isinstance(key, str) and key.strip()
     ))
+
+
+def restore_home_ownership() -> None:
+    """Restore clawvm ownership below its persistent home, excluding external mounts."""
+    find_command = ["find", str(HOME_DIRECTORY), "-xdev", "("]
+    for index, path in enumerate(EXTERNAL_HOME_PATHS):
+        if index:
+            find_command.append("-o")
+        find_command.extend(["-path", str(path)])
+    find_command.extend([
+        ")", "-prune", "-o", "-exec", "chown", "clawvm:clawvm", "{}", "+",
+    ])
+    subprocess.run(find_command, check=True)
 
 
 def write_authorized_keys(keys: list[str]) -> None:
@@ -76,6 +90,7 @@ def ensure_sshd() -> None:
 
 def on_system_start(context: dict) -> int:
     """Apply configured SSH keys and ensure key-only SSH access is available."""
+    restore_home_ownership()
     keys = ssh_keys(context)
     if keys:
         write_authorized_keys(keys)

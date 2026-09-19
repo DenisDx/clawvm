@@ -35,7 +35,7 @@ wait_for_external_gateway() {
 # Recover the Gateway only when OpenClaw did not start its own replacement.
 gateway_loop() {
 	while true; do
-		if openclaw gateway --bind loopback --port "${gateway_port}"; then
+		if openclaw gateway --allow-unconfigured --bind loopback --port "${gateway_port}"; then
 			gateway_status=0
 		else
 			gateway_status=$?

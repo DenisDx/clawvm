@@ -26,8 +26,8 @@ require_data_directory() {
 restore_owner_and_modes() {
     chown --recursive "${clawvm_uid}:${clawvm_gid}" "${data_dir}"
     find "${data_dir}" -xdev -type d -exec chmod 0750 {} +
-    find "${data_dir}" -xdev -type f -exec chmod 0640 {} +
     find "${data_dir}" -xdev -type f -perm /0111 -exec chmod 0750 {} +
+    find "${data_dir}" -xdev -type f ! -perm /0111 -exec chmod 0640 {} +
 }
 
 restore_runtime_files() {

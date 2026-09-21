@@ -8,7 +8,6 @@ ARG PLAYWRIGHT_VERSION=1.62.0
 
 ENV DEBIAN_FRONTEND=noninteractive \
     HOME=/home/clawvm \
-    OPENCLAW_HOME=/home/clawvm/.openclaw \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     PATH=/home/clawvm/.local/bin:/home/clawvm/.openclaw/bin:${PATH} \
     LANG=en_US.UTF-8 \

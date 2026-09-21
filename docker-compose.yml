@@ -13,7 +13,6 @@ services:
       - .env
     environment:
       HOME: /home/clawvm
-      OPENCLAW_HOME: /home/clawvm/.openclaw
       OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
       CLAWVM_HTTPS_HOST: ${CLAWVM_HTTPS_HOST:-127.0.0.1}
       CLAWVM_HTTPS_PORT: ${CLAWVM_HTTPS_PORT:-8880}

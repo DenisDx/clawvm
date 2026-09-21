@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-for candidate in "${OPENCLAW_HOME:-${HOME}/.openclaw}"/tools/node-*/bin/openclaw; do
+for candidate in "${HOME}/.openclaw"/tools/node-*/bin/openclaw; do
     if [[ -x "${candidate}" ]]; then
         exec "${candidate}" "$@"
     fi

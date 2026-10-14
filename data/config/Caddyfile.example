@@ -11,3 +11,11 @@ https://{$CLAWVM_HTTPS_HOST}:{$CLAWVM_HTTPS_PORT} {
         header_up -X-Forwarded-Proto
     }
 }
+
+http://:80 {
+    reverse_proxy 127.0.0.1:{$OPENCLAW_GATEWAY_PORT} {
+        header_up -X-Forwarded-For
+        header_up -X-Forwarded-Host
+        header_up -X-Forwarded-Proto
+    }
+}

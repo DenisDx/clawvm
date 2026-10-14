@@ -92,6 +92,8 @@ docker compose restart clawvm
 The sample launch command keeps `openclaw gateway` on loopback port `18789` and
 starts Caddy on HTTPS port `8880`. Caddy proxies the Control UI, HTTP endpoints,
 and WebSocket through one origin, so no CORS configuration is needed.
+It also listens on HTTP port `80` for clients that require plain HTTP/WebSocket;
+the OpenClaw gateway token and device authorization still apply.
 `PLAYWRIGHT_SHM_SIZE` controls the Docker Compose Chromium shared-memory size
 and defaults to `1gb`.
 

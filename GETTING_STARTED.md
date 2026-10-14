@@ -165,6 +165,10 @@ The default URL is `https://127.0.0.1:8880/` in both modes. The Gateway itself
 stays on loopback port `18789`; Caddy provides the HTTPS endpoint and proxies
 its UI and WebSocket as one origin.
 
+For a plain HTTP/WebSocket integration, use `http://<host>:80/`. Caddy proxies
+that endpoint to the same loopback Gateway, so the Gateway port remains
+unpublished. The OpenClaw gateway token and device authorization still apply.
+
 For a LAN URL such as `https://192.168.1.111:8880/`, set
 `CLAWVM_HTTPS_BIND_HOST=0.0.0.0` and set `CLAWVM_HTTPS_HOST` to the host LAN IP
 in the `.env` for the selected deployment mode. Recreate the service or

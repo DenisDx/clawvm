@@ -21,6 +21,26 @@ that Samba may publish. Never publish `data/` or `/home/clawvm` as a whole,
 because both contain OpenClaw credentials and configuration. See
 `SAMBA_SETUP.md` before enabling file sharing.
 
+## Workspace agent instructions
+
+[data/.openclaw/workspace/AGENTS.md](data/.openclaw/workspace/AGENTS.md) is
+the agent-facing guide in the persistent OpenClaw workspace. It describes
+available tools, usage, write locations, networking, and safety rules. Inside
+the VM, its path is `/home/clawvm/.openclaw/workspace/AGENTS.md`.
+
+The guide is read-only for repository agents. The proposed document-tool
+update is recorded in
+[data/.openclaw/workspace/AGENTS_.md](data/.openclaw/workspace/AGENTS_.md)
+with the exact old text, reason, and replacement. It covers PDF/OCR,
+`document-python`, graphics, Office formats, and email tools. **The correction
+still requires manual application to the original guide**; the companion is
+not automatically loaded as a replacement. Preserve any fork-specific
+instructions when applying it.
+
+These files are shared through the home bind mount, not baked into the image.
+Documentation changes require no image rebuild; agents must load the updated
+guide in their instruction context before relying on new guidance.
+
 ## PDF, graphics, and document tools
 
 The read-only image includes:

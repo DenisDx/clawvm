@@ -147,7 +147,8 @@ RUN python3 -m pip --isolated download --no-cache-dir --only-binary=:all: \
 COPY docker/init-document-tools.sh /usr/local/bin/init-document-tools
 COPY docker/document-python /usr/local/bin/document-python
 COPY docker/test-document-tools.py /opt/document-tools/test-document-tools.py
-RUN chmod 0755 /usr/local/bin/init-document-tools /usr/local/bin/document-python
+RUN chmod 0755 /usr/local/bin/init-document-tools /usr/local/bin/document-python \
+    && chmod -R a+rX /opt/document-tools
 
 ENV XDG_CACHE_HOME=/home/clawvm/.cache
 

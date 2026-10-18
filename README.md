@@ -21,6 +21,66 @@ that Samba may publish. Never publish `data/` or `/home/clawvm` as a whole,
 because both contain OpenClaw credentials and configuration. See
 `SAMBA_SETUP.md` before enabling file sharing.
 
+## PDF, graphics, and document tools
+
+The read-only image includes:
+
+- Poppler (`pdftotext`, `pdftoppm`, `pdfinfo`, `pdfimages`), Ghostscript (`gs`),
+  and `qpdf` for extraction, rendering, inspection, and rewriting PDFs.
+- Tesseract OCR with English (`eng`), Russian (`rus`), and Thai (`tha`) data,
+  plus Noto fonts for document rendering.
+- Pandoc for document conversion, `rsvg-convert` for SVG rendering, and
+  `vim-common` plus the separate Debian `xxd` package for hexadecimal inspection.
+- `msmtp` for SMTP submission and `mbsync` (isync) for IMAP synchronization.
+  No accounts, credentials, automatic polling, or mail services are configured.
+  Keep account configuration in the persistent home with restrictive permissions;
+  use TLS and your provider's supported authentication. OAuth2 providers may
+  require a separate token helper. Do not put credentials into the image.
+
+Pinned Python libraries include PyMuPDF (`pymupdf` / `fitz`), `pdfplumber`,
+`pypdf`, Pillow, `python-docx`, `openpyxl`, Beautiful Soup, and `lxml`.
+All dependencies are bundled as wheels under `/opt/document-tools` during the
+build. Startup initializes the persistent environment at
+`~/.local/share/document-tools/venv` offline, even when the home mount was empty
+or already existed. It never uses `pip --user` or modifies system Python.
+
+Use the dedicated launcher, which also initializes the environment if a
+deployment overrides the normal entrypoint:
+
+```bash
+document-python -c 'import fitz, pdfplumber, pypdf; print("PDF libraries ready")'
+document-python your_script.py
+# Alternatively, activate the environment for an interactive session:
+source ~/.local/share/document-tools/venv/bin/activate
+```
+
+The `venv` path is a symlink to an image-bundle-versioned environment. On a
+bundle or Python-version change, initialization creates and checks a new
+environment before switching the link; failure stops startup with an error.
+Installation is serialized for concurrent callers. Existing versions are kept,
+so rebuilds do not delete environments still used by running processes.
+Treat this environment as image-managed: add permanent dependencies to
+`docker/document-requirements.txt` and rebuild, or use a separate personal venv
+for ad hoc packages.
+
+Examples:
+
+```bash
+pdftotext -layout input.pdf output.txt
+pdftoppm -r 150 -png input.pdf page
+tesseract page-1.png stdout -l eng+rus+tha
+qpdf --check input.pdf
+pandoc input.docx -t markdown -o output.md
+document-python /opt/document-tools/test-document-tools.py
+```
+
+Tesseract consumes raster images, not PDFs; rasterize scanned pages first.
+Pandoc does not read arbitrary PDFs and does not reproduce complex Office
+layouts exactly. This baseline does not include LibreOffice or OCRmyPDF.
+Use a work directory below the persistent home for large documents: the
+default `/tmp` is only 64 MiB. For tools with substantial temporary output,
+create a home directory and set `TMPDIR` to it for that command.
+
 ## Browser automation
 
 The image includes pinned Playwright `1.62.0`, its Chromium browser, the

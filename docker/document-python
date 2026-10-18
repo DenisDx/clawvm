@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Run Python with the persistent document libraries; pass through all arguments.
+set -Eeuo pipefail
+/usr/local/bin/init-document-tools
+exec "${HOME}/.local/share/document-tools/venv/bin/python" "$@"

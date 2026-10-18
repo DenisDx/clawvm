@@ -31,10 +31,12 @@ RUN apt-get update \
         entr \
         fd-find \
         file \
+        fonts-noto-core \
         fzf \
         g++ \
         gcc \
         git \
+        ghostscript \
         gnupg \
         gzip \
         htop \
@@ -42,13 +44,16 @@ RUN apt-get update \
         iotop \
         iproute2 \
         iputils-ping \
+        isync \
         jq \
         less \
+        librsvg2-bin \
         locales \
         lsb-release \
         lsof \
         make \
         mtr-tiny \
+        msmtp \
         nano \
         netcat-openbsd \
         nmap \
@@ -56,8 +61,10 @@ RUN apt-get update \
         openssh-server \
         openssl \
         p7zip-full \
+        pandoc \
         parallel \
         pkg-config \
+        poppler-utils \
         postgresql-client \
         procps \
         psmisc \
@@ -67,6 +74,7 @@ RUN apt-get update \
         python3-pip \
         python3-venv \
         pipx \
+        qpdf \
         redis-tools \
         ripgrep \
         rclone \
@@ -78,14 +86,21 @@ RUN apt-get update \
         screen \
         strace \
         tar \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        tesseract-ocr-rus \
+        tesseract-ocr-tha \
         tmux \
         traceroute \
         tree \
         tzdata \
         unzip \
+        util-linux \
+        vim-common \
         vim-tiny \
         wget \
         whois \
+        xxd \
         xz-utils \
         yamllint \
         zip \
@@ -122,6 +137,17 @@ RUN apt-get update \
         'AllowUsers clawvm' \
         > /etc/ssh/sshd_config.d/clawvm.conf \
     && rm -rf /var/lib/apt/lists/* /tmp/caddy-stable.gpg "/tmp/yq_linux_${architecture}" "/tmp/${archive}"
+
+COPY docker/document-requirements.txt /opt/document-tools/requirements.txt
+RUN python3 -m pip --isolated download --no-cache-dir --only-binary=:all: \
+        --dest /opt/document-tools/wheels -r /opt/document-tools/requirements.txt \
+    && cd /opt/document-tools \
+    && sha256sum requirements.txt wheels/*.whl > SHA256SUMS
+
+COPY docker/init-document-tools.sh /usr/local/bin/init-document-tools
+COPY docker/document-python /usr/local/bin/document-python
+COPY docker/test-document-tools.py /opt/document-tools/test-document-tools.py
+RUN chmod 0755 /usr/local/bin/init-document-tools /usr/local/bin/document-python
 
 ENV XDG_CACHE_HOME=/home/clawvm/.cache
 

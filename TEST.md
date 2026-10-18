@@ -132,3 +132,50 @@ sandbox. Verify that `/home/clawvm` is the only persistent writable mount,
 `/tmp` and `/run` are tmpfs, `/dev/shm` has the configured `CLAWVM_SHM_SIZE`,
 and the root filesystem is read-only. Repeat the portable-home, Chromium, and
 gateway port checks from the Docker mode.
+
+## 11. Offline document environment and conversions
+
+With a running VM, execute:
+
+```bash
+docker compose exec clawvm document-python /opt/document-tools/test-document-tools.py
+docker compose exec clawvm document-python -m pip check
+```
+
+Expected: all five tests pass. The suite generates and removes its own fixtures
+below home. It checks PDF extraction through Poppler and all three Python PDF
+libraries; Poppler rasterization; qpdf linearization; Ghostscript rewriting;
+actual OCR of separate English, Russian, and Thai images; DOCX/XLSX round trips;
+HTML parsing; Pandoc and SVG conversion; hexadecimal output; and mail-client
+versions without contacting a mail server.
+
+Check first startup without network access, with read-only root and an empty
+disposable home (no live data mounts):
+
+```bash
+docker run --rm --network none --read-only \
+  --tmpfs /home/clawvm:rw,exec,uid=1000,gid=1000,mode=0750,size=1g \
+  --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+  --entrypoint bash clawvm:latest -ec '
+    document-python /opt/document-tools/test-document-tools.py
+    first="$(readlink ~/.local/share/document-tools/venv)"
+    document-python -m pip check
+    test "$first" = "$(readlink ~/.local/share/document-tools/venv)"
+    test "$(id -u)" = 1000
+  '
+```
+
+For a fork with a different UID/GID, use that fork's image and IDs. Expected:
+initial installation succeeds offline; a second call reuses the same
+environment; system Python remains unchanged.
+
+Also verify entrypoint startup with both an empty and an existing home, and
+repeat against a disposable persistent home across container recreation.
+Preserve an unrelated sentinel file and verify the venv remains usable and the
+sentinel remains unchanged. Concurrent `document-python` callers must succeed
+without overlapping installations. A missing wheel or unwritable home must
+produce a nonzero exit and must not switch the active `venv` link.
+
+For deployments using a custom `~/config/start.sh`, verify that the script
+still starts after environment initialization. Recheck Chromium, SSH, HTTP,
+read-only root, mounts, and UID/GID after deployment.

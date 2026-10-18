@@ -63,6 +63,35 @@ defaults to `1gb` in Docker Compose; `CLAWVM_SHM_SIZE` defaults to `1g` in sndbx
 For a Node script, import Playwright from
 `/usr/local/lib/node_modules/playwright`.
 
+## Documents and email
+
+Inside the VM:
+
+```bash
+pdftotext -layout input.pdf output.txt
+pdfinfo input.pdf
+pdftoppm -r 150 -png input.pdf page
+tesseract page-1.png stdout -l eng+rus+tha
+qpdf --check input.pdf
+pandoc input.docx -t markdown -o output.md
+rsvg-convert input.svg -o output.png
+document-python -c 'import fitz, pdfplumber, pypdf, docx, openpyxl, bs4, PIL'
+document-python /opt/document-tools/test-document-tools.py
+msmtp --version
+mbsync --version
+```
+
+`document-python` uses the image-managed persistent venv at
+`~/.local/share/document-tools/venv`. It initializes offline from bundled wheels
+and does not alter system Python. Use a separate venv for user-added packages.
+For large conversions, set `TMPDIR` to a writable directory under home rather
+than the default 64 MiB `/tmp`.
+
+Mail clients are installed but unconfigured: no messages are sent and no
+mailboxes are accessed until an account is explicitly configured. SMTP sending
+and IMAP synchronization require provider credentials and TLS; some providers
+also require an OAuth2 token helper.
+
 ## Base image update
 
 Update `Dockerfile` or its base-image arguments, then rebuild and recreate:

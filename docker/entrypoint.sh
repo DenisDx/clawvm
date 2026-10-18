@@ -4,6 +4,8 @@ set -Eeuo pipefail
 # Loads the user-owned, read-only environment file when mounted.
 source /usr/local/lib/clawvm/load-env.sh
 
+/usr/local/bin/init-document-tools
+
 start_script="${HOME}/config/start.sh"
 
 if [[ -x "${start_script}" ]]; then

@@ -5,6 +5,7 @@
 | `README.md` | Full ClawVM architecture, Docker and sndbx operation, updates, backup, and diagnostics. |
 | `GETTING_STARTED.md` | Short first-run Docker Compose and OpenClaw installation path. |
 | `commands.md` | Common operator commands. |
+| [data/openclaw_update.md](data/openclaw_update.md) | One-command update inside either VM or from its host, user switching, backup scope, verification, and failure recovery; accompanies the distributed `data/openclaw_update.sh`. |
 | `SAMBA_SETUP.md` | Host Samba and POSIX ACL configuration for the workspace only. |
 | `TEST.md` | Build, runtime, portability, Samba, and sndbx verification protocol. |
 | `config.sndbx.json5` | Mergeable sndbx sandbox template. |

@@ -25,12 +25,17 @@ openclaw gateway --help
 curl -fsSL https://openclaw.ai/install-cli.sh | bash
 ```
 
-For updates, follow the
-[prefix-bound OpenClaw update procedure](data/.openclaw/workspace/SYSTEM_DESCRIPTION.md#updating-the-persistent-openclaw-installation)
-and the [operator sequence](README.md#updating-openclaw-in-a-running-instance).
-Preview first, then keep `--no-restart` and restart through the existing
-deployment owner. The package remains below `/home/clawvm`, which is the host
-`data/` directory; do not update a global installation under `/usr/local`.
+For updates, use an independent root or `clawvm` terminal inside the VM:
+
+```bash
+bash /home/clawvm/openclaw_update.sh
+```
+
+See the [short update guide](data/openclaw_update.md) for preview, host invocation,
+backup scope, and failure recovery. The script handles stop/update/start and
+live verification; no normal VM restart is needed. Never invoke it from a
+Gateway-owned tool. The package stays below `/home/clawvm` (host `data/`),
+not in the read-only image's `/usr/local`.
 
 For a shell in an existing container created before the stable launcher was
 added:

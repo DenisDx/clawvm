@@ -432,6 +432,38 @@ Do not delete lock files or change its databases simply to bypass the wait.
 
 ## Updating the persistent OpenClaw installation
 
+### Recommended: the distributed updater
+
+Obtain user authorization for downtime. From an **independent SSH or host
+Docker-exec terminal**, as root or `clawvm`, run:
+
+```bash
+bash /home/clawvm/openclaw_update.sh
+```
+
+Root is switched to `clawvm` automatically. The script checks the existing
+installation and preview, uses disk-backed scratch, pauses the verified
+restart loop, stops the Gateway, backs up local OpenClaw state/packages,
+updates, resumes the same loop, and checks the live Gateway version and health.
+No normal VM restart or image rebuild is needed. Use `--check` for preview only.
+See [the short update guide](../../openclaw_update.md) for host commands,
+backup exclusions, and failure handling. Archives/logs are private and retained
+under `~/.local/state/openclaw-maintenance/run.*`.
+
+**Do not run this script from your own Gateway's shell tool.** It rejects that
+ancestry because stopping the Gateway can terminate its updater. Ask the
+operator to invoke the documented independent command. This script does not
+fix the Web UI update button or provide autonomous in-Gateway updates.
+Do not claim an update succeeded until the script reports live-version and
+health success. A same-version refresh is not a version upgrade.
+
+### Manual maintenance background (expert fallback)
+
+The remaining low-level procedure explains this deployment and supports
+operator-assisted recovery. It is not required for normal scripted updates.
+Unlike the script, the manual procedure kills the restart loop and requires
+the deployment owner to restart it afterwards.
+
 This deployment differs from an image that bundles OpenClaw in `/usr/local`:
 the **package lives in persistent home storage**, while the read-only image
 provides Node/npm and `/usr/local/bin/openclaw`, a launcher. Rebuilding the image

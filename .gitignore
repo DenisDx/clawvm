@@ -1,6 +1,8 @@
 .env
 data/*
 !data/.gitkeep
+!data/openclaw_update.sh
+!data/openclaw_update.md
 !data/config/
 data/config/*
 !data/config/start.sh.example

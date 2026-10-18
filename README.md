@@ -143,6 +143,25 @@ OpenClaw is installed in the persistent home, not in the read-only image.
 Rebuilding the image updates its system tools, but does not update this
 OpenClaw package.
 
+**Recommended:** from an independent root or `clawvm` terminal inside the VM:
+
+```bash
+bash /home/clawvm/openclaw_update.sh
+```
+
+The distributed [updater](data/openclaw_update.sh) performs user switching,
+disk-backed staging, cold OpenClaw backup, exclusive Gateway shutdown, update,
+supervisor recovery, and live-version/health checks. No normal VM restart or
+image rebuild is required. Read the short [update guide](data/openclaw_update.md)
+for the host-side command, backup exclusions, and failure recovery.
+Do not invoke it as a Gateway-owned agent tool.
+
+### Manual maintenance (expert fallback only)
+
+The following older low-level procedure remains for operator-assisted recovery,
+not routine updates. Unlike the script, it terminates the supervisor and
+therefore requires a deployment-owner restart afterwards.
+
 Use the inside-VM procedure in
 [SYSTEM_DESCRIPTION.md: Updating the persistent OpenClaw installation](data/.openclaw/workspace/SYSTEM_DESCRIPTION.md#updating-the-persistent-openclaw-installation).
 It verifies the installer-owned prefix, checks executable permissions, runs an

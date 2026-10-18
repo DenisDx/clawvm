@@ -3,6 +3,22 @@
 Run these checks from the ClawVM checkout after changing the image or deployment
 configuration.
 
+## OpenClaw updater regression tests
+
+With `clawvm:latest` built and Docker available on the host:
+
+```bash
+bash -n data/openclaw_update.sh
+python3 docker/test-openclaw-update.py
+```
+
+Tests use disposable read-only containers, synthetic home/state, a fake Gateway,
+and no network or production data. They exercise user switching, cold backup,
+supervisor pause/resume, live-version checks, preview failure, installation
+failure, and refusal of Gateway-owned tool invocations. A real package update
+still requires an authorized maintenance window; a mock upgrade or an
+already-current production refresh is not evidence of a real version upgrade.
+
 ## 1. Build and baseline commands
 
 ```bash

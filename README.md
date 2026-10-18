@@ -137,6 +137,47 @@ required, configure the official Playwright seccomp profile in the deployment
 and explicitly enable `chromiumSandbox: true`. Do not add `SYS_ADMIN` as a
 general runtime capability.
 
+## Updating OpenClaw in a running instance
+
+OpenClaw is installed in the persistent home, not in the read-only image.
+Rebuilding the image updates its system tools, but does not update this
+OpenClaw package.
+
+Use the inside-VM procedure in
+[SYSTEM_DESCRIPTION.md: Updating the persistent OpenClaw installation](data/.openclaw/workspace/SYSTEM_DESCRIPTION.md#updating-the-persistent-openclaw-installation).
+It verifies the installer-owned prefix, checks executable permissions, runs an
+update preview, and keeps npm's destination under home even when the updater
+uses the image's Node runtime. A plain `npm install -g` under the image runtime
+defaults to `/usr/local` and is not this deployment's update procedure.
+Do not remove `/usr/local/bin/openclaw` to bypass a foreign-destination error.
+
+Operator sequence:
+
+1. Arrange a maintenance window and a consistent backup of the persistent
+   `data/` directory and private deployment configuration. For a cold backup,
+   stop the VM through its existing owner, preserve ownership/ACLs in the
+   backup, then start the same VM before running the terminal update.
+2. Enter that running VM as `clawvm`, not root. Follow the linked prefix-bound
+   preview, inspect the plan, then run the approved update with `--no-restart`.
+   If npm/npx lack owner execute permission, the linked guide describes a
+   repair limited to those two script files; do not reset all home permissions.
+3. After a successful update, restart the **existing deployment**. For sndbx,
+   use Restart for the selected sandbox. For a Compose-managed instance, use
+   `docker compose restart SERVICE`, replacing `SERVICE` with its service name.
+   Do not start a parallel Compose instance for a VM already managed by sndbx.
+   Neither an image rebuild nor container recreation is required for this
+   home-installed package update.
+4. Verify `openclaw --version`, `openclaw gateway status --deep`,
+   `openclaw gateway health`, the published web endpoint, and required channels.
+   A previous owner lease can delay Gateway recovery by up to five minutes.
+
+There is no OpenClaw-managed system service in the standard deployment:
+`~/config/start.sh` supervises the Gateway. A package-update success is not
+proof that the running Gateway has switched versions. Do not use
+`openclaw gateway install` to create a competing service. Prefer this terminal
+maintenance flow to the web UI updater, which inherits the Gateway environment
+and does not see environment variables exported in a separate terminal.
+
 ## Docker Compose
 
 ```bash

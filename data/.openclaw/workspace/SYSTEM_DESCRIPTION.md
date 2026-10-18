@@ -426,6 +426,140 @@ the previous container's owner lease is still active. The observed lease lasts
 up to five minutes; allow the supervisor to recover and check Gateway health.
 Do not delete lock files or change its databases simply to bypass the wait.
 
+## Updating the persistent OpenClaw installation
+
+This deployment differs from an image that bundles OpenClaw in `/usr/local`:
+the **package lives in persistent home storage**, while the read-only image
+provides Node/npm and `/usr/local/bin/openclaw`, a launcher. Rebuilding the image
+does not update the home-installed OpenClaw package.
+
+There can be two Node runtimes: the image's `/usr/local/bin/node` and the
+installer's `~/.openclaw/tools/node-vVERSION/bin/node`. npm's default global
+prefix follows the selected runtime. An update launched under the image runtime
+can select `/usr/local` even when its OpenClaw package is under home. The updater
+then reports `global-install-foreign-destination` because the image-owned
+launcher is not owned by that package. This message does not prove that another
+OpenClaw package actually exists under `/usr/local/lib/node_modules`.
+Do not remove the image launcher, make the root filesystem writable, or use
+`sudo npm install -g` to bypass the ownership check.
+
+Use the terminal maintenance procedure below. The web UI updater inherits the
+Gateway process's environment, not exports made in a separate terminal.
+Do not assume a terminal fix changes the web UI's update destination.
+
+### 1. Prepare and inspect the existing installation
+
+Obtain authorization for the update and arrange a consistent backup through
+the deployment operator first, including persistent OpenClaw state and local
+configuration. Keep the same user, HOME, profile, OPENCLAW_STATE_DIR and
+OPENCLAW_CONFIG_PATH throughout. Do not print their private contents.
+
+Inspect the installer-managed runtime link and npm executable:
+
+```bash
+runtime="$(readlink -f "$HOME/.openclaw/tools/node/bin/node")"
+prefix="$(dirname "$(dirname "$runtime")")"
+printf 'Runtime: %s\nPrefix: %s\n' "$runtime" "$prefix"
+stat -Lc '%A %U:%G %n' "$prefix/bin/npm" "$prefix/bin/npx"
+```
+
+This discovery applies to the official local-prefix installer layout used
+here. If the runtime link is absent or the prefix does not identify the
+existing `~/.openclaw/tools/node-vVERSION` installation, stop and inspect the
+actual launcher with the operator. Do not guess the newest versioned directory
+or create a second installation.
+
+If npm's ownership check fails with `EACCES`, inspect its script ACL:
+
+```bash
+getfacl "$prefix/lib/node_modules/npm/bin/npm-cli.js"
+test -x "$prefix/bin/npm"
+```
+
+A file owned by `clawvm` with `user::rw-` cannot be executed by that owner,
+even if a named `user:clawvm:rwx` ACL entry or the group grants execute.
+For this specific defect, the owning user can restore only the missing owner
+execute bits, after verifying the targets belong to this installation:
+
+```bash
+chmod u+x -- "$prefix/lib/node_modules/npm/bin/npm-cli.js" \
+  "$prefix/lib/node_modules/npm/bin/npx-cli.js"
+"$prefix/bin/npm" --version
+```
+
+This is a targeted repair, not a routine permission reset. Do not recursively
+chmod/chown the home directory, change host ACL policy, or use `chmod 777`.
+If ownership/access prevents the targeted repair, ask the host operator.
+
+### 2. Preview with an explicit persistent npm destination
+
+The following subshell uses the image Node explicitly, keeps the existing
+package as the update target, and pins both npm prefix environment spellings
+so a runtime handoff cannot redirect installation into `/usr/local`.
+It does not modify `.env`, npm configuration files, or the parent shell.
+
+```bash
+(
+  set -eu
+  runtime="$(readlink -f "$HOME/.openclaw/tools/node/bin/node")"
+  prefix="$(dirname "$(dirname "$runtime")")"
+  case "$prefix" in
+    "$HOME"/.openclaw/tools/node-v*) ;;
+    *) printf 'Unexpected OpenClaw installation prefix: %s\n' "$prefix" >&2; exit 1 ;;
+  esac
+  cli="$prefix/lib/node_modules/openclaw/openclaw.mjs"
+  if [ ! -x "$runtime" ] || [ ! -x "$prefix/bin/npm" ] || [ ! -f "$cli" ]; then
+    printf 'The selected OpenClaw installation is incomplete or not executable.\n' >&2
+    exit 1
+  fi
+  export NPM_CONFIG_PREFIX="$prefix" npm_config_prefix="$prefix"
+  if [ "$(npm prefix -g)" != "$prefix" ]; then
+    printf 'npm did not select the persistent OpenClaw prefix.\n' >&2
+    exit 1
+  fi
+  /usr/local/bin/node "$cli" update --dry-run --no-restart --json
+)
+```
+
+Check the reported installation root, current/target versions, actions, notes,
+and any preflight refusals. A dry run does not install packages, migrate them,
+or restart the Gateway; it is not proof that every later installation step
+will succeed. The updater may still record its diagnostic run.
+
+### 3. Update, then activate through the deployment owner
+
+Once the backup and plan are approved, repeat the same subshell with
+`--dry-run` removed from its final command. Keep `--no-restart`.
+Do not add `--yes` or `--accept-capabilities` without reviewing the downgrade
+or plugin-capability changes they approve.
+
+This VM's Gateway is supervised by `~/config/start.sh`, not a supported
+OpenClaw-managed system service. A successful package update with
+`--no-restart` does not mean the old Gateway process has loaded the new code.
+Ask the operator to restart the existing VM via sndbx or its existing Compose
+deployment. Do not install a second service with `openclaw gateway install`,
+run another Gateway, or use `gateway restart` as a substitute for the actual
+deployment owner.
+
+After the restart, check:
+
+```bash
+openclaw --version
+openclaw gateway status --deep
+openclaw gateway health
+```
+
+Also verify the operator-facing HTTP/HTTPS endpoint and the required channels.
+Allow for the owner-lease delay described above. If preflight, migration,
+plugin synchronization, or health checks fail, keep backups and report the
+exact failed step. Do not blindly retry a raw npm install, delete lock/state
+files, run `doctor --fix`, or roll back code over a migrated database.
+Follow the version-specific recovery procedure instead.
+
+Official references:
+[OpenClaw updating](https://docs.openclaw.ai/install/updating) and
+[Node/runtime selection](https://docs.openclaw.ai/install/node).
+
 ## Privacy and task boundaries
 
 Never print, copy, commit, or disclose `~/.env`, OpenClaw credentials/state,

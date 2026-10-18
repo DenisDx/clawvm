@@ -166,7 +166,10 @@ Operator sequence:
    stop the VM through its existing owner, preserve ownership/ACLs in the
    backup, then start the same VM before running the terminal update.
 2. Enter that running VM as `clawvm`, not root. Follow the linked prefix-bound
-   preview, inspect the plan, then run the approved update with `--no-restart`.
+   preview and inspect the plan. Before installation or `update repair`, use
+   the exclusive maintenance procedure below to stop the Gateway and its
+   restart loop. Then run the approved update with `--no-restart` from the
+   independent shell, retaining the disk-backed temporary-directory setup.
    If npm/npx lack owner execute permission, the linked guide describes a
    repair limited to those two script files; do not reset all home permissions.
 3. After a successful update, restart the **existing deployment**. For sndbx,
@@ -179,7 +182,10 @@ Operator sequence:
    package and launcher are intact. Do not restart a still-running Gateway
    over an absent or incomplete installation; recover through the operator.
 4. Verify `openclaw --version`, `openclaw gateway status --deep`,
-   `openclaw gateway health`, the published web endpoint, and required channels.
+   `openclaw gateway health`, and `openclaw gateway call status --json`.
+   Its `runtimeVersion` must match the installed version: CLI version and
+   HTTP 200 alone do not prove that the live Gateway was upgraded.
+   Also check the published web endpoint and required channels.
    A previous owner lease can delay Gateway recovery by up to five minutes.
 
 There is no OpenClaw-managed system service in the standard deployment:
@@ -188,6 +194,76 @@ proof that the running Gateway has switched versions. Do not use
 `openclaw gateway install` to create a competing service. Prefer this terminal
 maintenance flow to the web UI updater, which inherits the Gateway environment
 and does not see environment variables exported in a separate terminal.
+
+### Exclusive maintenance shell
+
+Installation and recovery can require exclusive database maintenance even
+with `--no-restart`. They must not run as a tool call inside the Gateway being
+stopped. Use a host terminal; set `container` to the existing deployment's
+name (`sndbx-clawvm` or, for the local Obsidian fork,
+`sndbx-denis-obsidian-assistant`). Do not create another container.
+
+After the backup and preview, stop the verified Gateway and supervisor, but
+leave the VM running for `docker exec`. This sequence applies to the standard
+`~/config/start.sh` supervisor; stop and inspect if its process checks fail:
+
+```bash
+container=EXISTING_CONTAINER_NAME
+docker exec --user clawvm "$container" bash -c '
+  set -eu
+  gateway_pid="$(ps -eo pid=,comm= | awk '\''$2 == "openclaw-gatewa" {print $1}'\'')"
+  case "$gateway_pid" in
+    ""|*[!0-9]*) printf "Expected exactly one Gateway process.\n" >&2; exit 1 ;;
+  esac
+  supervisor_pid="$(ps -p "$gateway_pid" -o ppid= | tr -d " ")"
+  test "$supervisor_pid" != 1
+  test "$(ps -p "$supervisor_pid" -o comm=)" = bash
+  kill -STOP "$supervisor_pid"
+  kill -TERM "$supervisor_pid"
+  kill -CONT "$supervisor_pid"
+  kill -TERM "$gateway_pid"
+  for attempt in $(seq 1 90); do
+    status="$(ps -p "$gateway_pid" -o stat= || true)"
+    case "$status" in
+      ""|Z*)
+        if ss -H -ltn "sport = :18789" | grep -q .; then
+          printf "Gateway port remains occupied; inspect before maintenance.\n" >&2
+          exit 1
+        fi
+        exit 0 ;;
+    esac
+    sleep 1
+  done
+  printf "Gateway shutdown timed out; do not proceed.\n" >&2
+  exit 1
+'
+docker exec -it --user clawvm "$container" bash
+```
+
+Inside that independent shell, run the full system-guide update block with
+`--dry-run` removed, or the explicitly required recovery command. Do not
+delete database locks to bypass maintenance contention.
+
+When the update has completed and `openclaw --version` works, exit the shell
+and restart through sndbx. If stopping the VM stalls while the shell waits
+for foreground Caddy, gracefully stop the verified proxy from the host:
+
+```bash
+docker exec --user clawvm "$container" bash -c '
+  set -eu
+  proxy_pid="$(ps -eo pid=,comm= | awk '\''$2 == "caddy" {print $1}'\'')"
+  case "$proxy_pid" in
+    ""|*[!0-9]*) printf "Expected exactly one Caddy process.\n" >&2; exit 1 ;;
+  esac
+  kill -TERM "$proxy_pid"
+'
+docker inspect --format '{{.State.Status}}' "$container"
+```
+
+Wait for `exited`, then use **Start** for this VM in sndbx so its SSH startup
+hook runs too. Perform all version, Gateway, channel, and HTTPS checks listed
+above. If maintenance fails, recover a complete installation before starting
+the Gateway; do not leave a partly replaced package behind.
 
 ## Docker Compose
 

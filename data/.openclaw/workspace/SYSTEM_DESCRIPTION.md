@@ -457,6 +457,13 @@ Obtain authorization for the update and arrange a consistent backup through
 the deployment operator first, including persistent OpenClaw state and local
 configuration. Keep the same user, HOME, profile, OPENCLAW_STATE_DIR and
 OPENCLAW_CONFIG_PATH throughout. Do not print their private contents.
+Use an independent SSH or host `docker exec` shell for installation and
+recovery, not a tool process owned by the Gateway being updated. The operator
+must stop the Gateway and its automatic restart loop before the actual update
+or `update repair`, while keeping the VM available for that maintenance shell.
+Otherwise Doctor can fail with `gateway-lifecycle` database-lock contention.
+The VM README contains the host-side sequence. A preview does not require
+stopping the Gateway.
 
 Inspect the installer-managed runtime link and npm executable:
 
@@ -494,6 +501,16 @@ chmod u+x -- "$prefix/lib/node_modules/npm/bin/npm-cli.js" \
 This is a targeted repair, not a routine permission reset. Do not recursively
 chmod/chown the home directory, change host ACL policy, or use `chmod 777`.
 If ownership/access prevents the targeted repair, ask the host operator.
+
+Package file modes can also affect updating. The updater compares packaged
+`dist` files with its content inventory and treats changed executable status
+as a local override, even when the content hashes match. If it spends excessive
+time preserving thousands of overrides, have the operator compare hashes and
+executable bits against the installed package inventory. Only with approval,
+repair executable bits on individually verified, content-identical files.
+Preserve ownership, read/write access, and ACL entries; changing execute bits
+can change the ACL mask's effective execute access. Never reset permissions
+recursively or discard genuine local code changes.
 
 ### 2. Preview with an explicit persistent npm destination
 
@@ -573,7 +590,13 @@ After the restart, check:
 openclaw --version
 openclaw gateway status --deep
 openclaw gateway health
+openclaw gateway call status --json
 ```
+
+The status RPC's `runtimeVersion` identifies the running Gateway and must match
+the installed version. Do not substitute the CLI version or HTTP 200 for this
+check. The general `openclaw status --json` output can have `gateway.self: null`
+even when the Gateway is reachable; use the direct status RPC for its version.
 
 Also verify the operator-facing HTTP/HTTPS endpoint and the required channels.
 Allow for the owner-lease delay described above. If preflight, migration,

@@ -1,9 +1,13 @@
 # ClawVM System Description
 
 This is the shared runtime reference for ClawVM-derived virtual machines.
-Read [AGENTS.md](AGENTS.md) for this machine's identity, mounts, permissions,
-and task-specific restrictions. **Agents working inside the VM must not edit
-this file.** Report omissions to the image maintainer instead.
+Read this machine's local [AGENTS.md](AGENTS.md), when configured, for agent
+identity, mounts, permissions, and task-specific restrictions. That file is
+private to the deployment, ignored by Git, and not supplied by this distribution.
+This shared reference is the distributed source for software usage and common
+VM behavior, independent of any particular agent profile. **Agents working
+inside the VM must not edit this file.** Report omissions to the image
+maintainer instead.
 
 This file is version-controlled and must remain identical across forks using
 the same read-only software baseline. Fork-specific UIDs, host paths, published

@@ -31,20 +31,28 @@ and known unusable wrappers. Keep it identical across forks of the same
 read-only software baseline; agents inside the VM must not edit it.
 
 [data/.openclaw/workspace/AGENTS.md](data/.openclaw/workspace/AGENTS.md)
-is the per-instance agent entrypoint. The intended split keeps only machine
-identity, local restrictions, and a link to the shared reference there.
-Because this guide is read-only for repository agents, the exact proposed
-replacement is recorded in
-[data/.openclaw/workspace/AGENTS_.md](data/.openclaw/workspace/AGENTS_.md)
-and **still requires manual application**. Until then, the original guide
-retains its older common instructions; the companion is not automatically
-loaded in its place. Preserve each fork's specific mount and permission rules.
+is the local OpenClaw agent description for one instance. It is **ignored by
+Git and not part of the distribution**. Each deployment owns its identity,
+task instructions, mount restrictions, and other agent-specific content.
+Configure it locally through the instance's OpenClaw setup; a fresh repository
+checkout does not supply this file. Local instructions should direct agents to
+read SYSTEM_DESCRIPTION.md and not modify that shared reference.
+
+There are only two documents in this arrangement: the local AGENTS.md and the
+distributed SYSTEM_DESCRIPTION.md. No correction companion or shared agent
+profile is maintained. Keep software inventories and common runtime guidance
+in SYSTEM_DESCRIPTION.md, not in a distributed per-agent configuration.
+
+When upgrading a checkout that previously tracked AGENTS.md, preserve its local
+copy before applying the upstream tracking removal: an ordinary pull can delete
+the formerly tracked file. Restore the local copy if necessary, then verify
+that it exists, is ignored, and is absent from `git ls-files`. Future Git
+updates must not overwrite instance-specific agent instructions.
 
 Inside the VM, these files are at `/home/clawvm/.openclaw/workspace/`.
 They are shared through the home bind mount, not baked into the image.
-Documentation changes require no image rebuild. After manual application,
-agents must load the shortened guide and its shared reference into their
-instruction context.
+Documentation changes require no image rebuild. Agents must read the shared
+reference together with their local OpenClaw instructions.
 
 ## PDF, graphics, and document tools
 

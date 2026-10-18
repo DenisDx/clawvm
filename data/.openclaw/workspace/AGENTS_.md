@@ -1,110 +1,156 @@
 # Agent Guide Corrections
 
-The companion below records a proposed correction to the read-only
-[AGENTS.md](AGENTS.md). It has not been applied to that file and is not
-automatically loaded in its place. An operator must apply the replacement
-manually, preserving any deployment-specific instructions.
+This companion records the proposed replacement for the read-only
+[AGENTS.md](AGENTS.md). It is not automatically loaded instead of that file.
+An operator must apply the replacement manually. The shared runtime reference
+is now maintained in [SYSTEM_DESCRIPTION.md](SYSTEM_DESCRIPTION.md).
 
-## Describe preinstalled document tools and the persistent Python environment
+## Keep only instance-specific instructions and link the common system reference
 
 ### Old text (exactly)
 
-```markdown
+````markdown
+# ClawVM Agent Guide
+
+You are running as the unprivileged `clawvm` user in a Debian Bookworm
+container. Your home directory is `/home/clawvm`; it is a writable host mount
+and is the only persistent area. Your current OpenClaw workspace is
+`/home/clawvm/.openclaw/workspace`.
+
+## Persistence and Write Locations
+
+- Keep work, source checkouts, notes, generated artifacts, and user-facing
+  files in the workspace or elsewhere below `/home/clawvm`.
+- Persistent OpenClaw state: `/home/clawvm/.openclaw`.
+- Persistent configuration and startup files: `/home/clawvm/config`.
+- User-local tools: `/home/clawvm/.local/bin`.
+- User caches: `/home/clawvm/.cache`.
+- Caddy state and internal CA: `/home/clawvm/.local/share/caddy`.
+- `/tmp` and `/run` are writable but ephemeral; do not store work there that
+  must survive a restart.
+- The container root filesystem is read-only. Do not use `apt`, write to
+  `/usr`, `/etc`, or `/opt`, or try to install system packages at runtime.
+- You have no sudo access. Request a base-image change when a missing system
+  package is required.
+
+## OpenClaw
+
+- `openclaw` is available through `/usr/local/bin/openclaw`; it resolves the
+  installer-managed CLI under `~/.openclaw/tools/node-*/bin/openclaw`.
+- If OpenClaw has not been installed, run its official installer:
+  `curl -fsSL https://openclaw.ai/install-cli.sh | bash`.
+- The normal persistent startup script is `/home/clawvm/config/start.sh`.
+  Create it from `/home/clawvm/config/start.sh.example` after setup and make
+  it executable with `chmod 0750 ~/config/start.sh`.
+- The configured Gateway is intentionally loopback-only at
+  `127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789}`. Do not expose it directly or
+  enable Gateway TLS: Caddy is the external TLS endpoint.
+- Private runtime values are loaded from `/home/clawvm/.env`. Never print,
+  copy, commit, or disclose its contents. It can contain Gateway credentials.
+- The OpenClaw CLI path is also available through
+  `~/.openclaw/bin`; use `export PATH="$HOME/.openclaw/bin:$PATH"` only for
+  compatibility with an older image.
+
+## HTTPS and Networking
+
+- Caddy is installed as `caddy`. The startup script runs it with
+  `/home/clawvm/config/Caddyfile`; create that file from
+  `/home/clawvm/config/Caddyfile.example` if it is absent.
+- Caddy serves HTTPS on `${CLAWVM_HTTPS_PORT:-8880}` and proxies the Gateway
+  plus WebSocket traffic. Its certificate is signed by the Caddy internal CA.
+- Do not add forwarded headers or OpenClaw trusted-proxy settings: the supplied
+  Caddy configuration strips forwarded headers so the upstream stays direct
+  loopback.
+- Ports `8881` through `8885` may be published by the deployment for services
+  you intentionally run. Confirm a listener with `ss -ltnp` before using one.
+- Normal outbound networking is available. Use `curl`, `wget`, `git`, `ssh`,
+  `rclone`, or `rsync` as needed, but do not send secrets or private workspace
+  files to an untrusted destination.
+
+## Browser Automation
+
+- Playwright `1.62.0` and Chromium are preinstalled. Browser binaries live in
+  the image at `/ms-playwright`; do not download a second browser copy.
+- Run `playwright --version` to verify the CLI.
+- Example: `playwright screenshot --device="Desktop Chrome" https://example.com /tmp/example.png`.
+- For Node scripts, import Playwright from
+  `/usr/local/lib/node_modules/playwright`.
+- Use `chromiumSandbox: false` with the default Docker seccomp policy. Do not
+  add `SYS_ADMIN` or weaken container isolation to support browsing.
+- Store screenshots, downloads, browser profiles, and final artifacts below
+  `/home/clawvm` when they need to persist.
+
+## Installed Tools
+
+- Development: Node.js with Corepack, npm, Python 3 with pip/venv/pipx,
+  `gcc`, `g++`, `make`, `build-essential`, `pkg-config`.
+- Source and text: `git`, `rg`, `fd`, `jq`, `yq`, `sed`, `awk`, `vim`, `nano`,
+  `less`, `tree`, `file`, `diff`.
+- Data and databases: `psql`, `mysql`, `sqlite3`, `redis-cli`.
+- Network and diagnostics: `curl`, `wget`, `ssh`, `scp`, `rsync`, `rclone`,
+  `dig`, `ping`, `nc`, `nmap`, `ss`, `lsof`, `strace`, `btop`, `htop`.
+- Archives and crypto: `tar`, `zip`, `unzip`, `7z`, `gzip`, `bzip2`, `xz`,
+  `zstd`, `age`, `openssl`, `gpg`.
+- Shell and process control: Bash, `tmux`, `screen`, `parallel`, `entr`,
+  `ps`, `pgrep`, `pkill`, `timeout`.
 - Use `fd` instead of `fdfind`; the compatibility alias is already installed.
+
+## SSH
+
+- SSH client tools are available. SSH server access, when provided, is
+  key-only for user `clawvm` and is managed by sndbx at deployment time.
+- Never edit `/etc/ssh` or expect host keys under `/run` to persist.
+
+## Operational Commands
+
+```bash
+# Identify the current identity, storage, processes, and network listeners.
+id
+df -h "$HOME" /tmp
+ps aux
+ss -ltnp
+
+# Inspect OpenClaw and proxy status without revealing secrets.
+openclaw --help
+test -x ~/config/start.sh && sed -n '1,160p' ~/config/start.sh
+test -f ~/config/Caddyfile && caddy validate --config ~/config/Caddyfile --adapter caddyfile
+
+# Work in the persistent workspace.
+cd ~/.openclaw/workspace
 ```
+
+## Safety Rules
+
+- Treat every file outside the workspace as potentially sensitive, especially
+  `~/.env`, `~/.openclaw`, SSH material, Caddy state, and browser profiles.
+- Do not delete, overwrite, rotate, or disclose credentials, OpenClaw state,
+  gateway configuration, or certificates unless the user explicitly asks.
+- Before a destructive command, inspect the target and confirm its scope.
+- Keep changes focused on the user's task. Report commands run, files changed,
+  validation performed, and blockers clearly.
+````
 
 ### Reason
 
-The installed-tools list does not describe the image's PDF, multilingual OCR,
-graphics, document-conversion, or email tools. Agents also need to use the
-dedicated persistent Python environment instead of assuming these packages are
-available in system Python or reinstalling them with `pip --user`.
+Common runtime behavior, installed programs, invocation examples, and safety
+guidance belong in the identical, version-controlled SYSTEM_DESCRIPTION.md
+shared across forks. AGENTS.md should retain only this instance's settings and
+direct agents to read, but not edit, the shared reference. This also replaces
+the old incomplete tool inventory with a manifest- and runtime-checked one.
 
 ### Recommended new text
 
 ````markdown
-- Use `fd` instead of `fdfind`; the compatibility alias is already installed.
-- PDF: Poppler (`pdftotext`, `pdftoppm`, `pdfinfo`, `pdfimages`), Ghostscript
-  (`gs`), and `qpdf`.
-- OCR: `tesseract` with English (`eng`), Russian (`rus`), and Thai (`tha`)
-  language data; Noto fonts are installed for text rendering.
-- Documents and graphics: `pandoc`, `rsvg-convert`, and `xxd`.
-- Email: `msmtp` for SMTP submission and `mbsync` (isync) for IMAP
-  synchronization. Both are installed but accounts are not preconfigured.
+# ClawVM Agent Guide
 
-## PDF and OCR Workflow
+Before working, read [SYSTEM_DESCRIPTION.md](SYSTEM_DESCRIPTION.md) for the
+common VM behavior, installed programs, invocation examples, and safety rules.
+Agents must not edit SYSTEM_DESCRIPTION.md; report needed corrections to the
+image maintainer. It is version-controlled and shared unchanged across forks.
 
-- Inspect PDFs with `pdfinfo` and try `pdftotext -layout` first. For scans
-  without a text layer, rasterize the required pages with `pdftoppm`, then
-  use Tesseract. Tesseract accepts images, not PDF input.
-- Use `pdfimages` to extract embedded images; use `pdftoppm` when you need
-  the complete rendered page, including text and vector graphics.
-- Use `qpdf --check` for structural diagnostics, `qpdf --linearize` to
-  linearize, and Ghostscript for rendering or rewriting. Keep the original:
-  rewriting can change document features and invalidate signatures.
-- Run commands in a task-specific writable directory below home. Large PDF
-  jobs can exceed the default 64 MiB `/tmp`; use a home-backed `TMPDIR`.
-  Restrict page ranges and resolution to avoid unnecessary memory/disk use.
+## This instance
 
-```bash
-mkdir -p "$HOME/.cache/document-tools/tmp"
-export TMPDIR="$HOME/.cache/document-tools/tmp"
-pdfinfo input.pdf
-pdftotext -layout input.pdf extracted.txt
-pdftoppm -f 1 -l 1 -singlefile -r 150 -png input.pdf scan
-tesseract scan.png stdout -l eng+rus+tha
-pdfimages -png input.pdf embedded
-qpdf --check input.pdf
-qpdf --linearize input.pdf linearized.pdf
-gs -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pdfwrite \
-  -sOutputFile=rewritten.pdf input.pdf
-xxd -l 64 input.pdf
-```
-
-## Python Documents and Graphics
-
-- Run `document-python script.py` to use the preinstalled libraries:
-  PyMuPDF (`pymupdf`, also available through the legacy `fitz` import),
-  `pdfplumber`, `pypdf`, Pillow (`PIL`), `python-docx` (`docx`),
-  `openpyxl`, Beautiful Soup (`bs4`), and `lxml`.
-- Prefer `import pymupdf` in new scripts; the `fitz` alias is deprecated.
-- The launcher initializes and uses
-  `~/.local/share/document-tools/venv`, a persistent symlink to an
-  image-managed versioned environment. Dependencies are installed offline
-  from pinned wheels in the read-only `/opt/document-tools` directory.
-- Plain `python3` remains system Python. Do not assume it has these libraries
-  and do not reinstall them with `pip --user`. For an interactive session,
-  activate the document venv only after initialization with the launcher.
-- Do not modify or delete the image-managed venv or its version directories.
-  Request an image dependency update for permanent additions, or use a
-  separate personal venv for experimental packages.
-- Use PyMuPDF for PDF reading/rendering, `pdfplumber` for text/table extraction,
-  and `pypdf` for page manipulation. Scanned tables still need OCR and review;
-  extraction is not guaranteed to preserve complex layouts.
-- Use Pandoc for supported document formats, `python-docx` for DOCX,
-  `openpyxl` for XLSX, Beautiful Soup/lxml for HTML/XML, Pillow for raster
-  graphics, and `rsvg-convert` for SVG. Pandoc does not read arbitrary PDFs;
-  LibreOffice and OCRmyPDF are not included.
-
-```bash
-document-python -c 'import pymupdf, pdfplumber, pypdf, PIL, docx, openpyxl, bs4, lxml'
-document-python your_script.py
-source ~/.local/share/document-tools/venv/bin/activate
-pandoc input.docx -t markdown -o converted.md
-rsvg-convert input.svg -o rendered.png
-document-python /opt/document-tools/test-document-tools.py
-```
-
-## Email Tools
-
-- `msmtp --version` and `mbsync --version` verify availability without
-  sending mail or accessing a mailbox.
-- Configure only user-authorized accounts, with TLS and the provider's
-  supported authentication. OAuth2 providers may need a separate token
-  helper; no account credentials or helper are bundled.
-- Keep mail configuration and credentials private in the persistent home,
-  never in the image, Git, logs, or chat output.
-- Sending email and synchronizing mailboxes require explicit user
-  authorization for the account and action. Do not infer permission from
-  the presence of a client or configuration.
+- This is the base ClawVM instance, running as `clawvm` (UID/GID `1000:1000`).
+- Do not assume that another fork's Obsidian vault or agent-exchange mounts
+  exist here. Use only this deployment's configured mounts and authorized tasks.
 ````

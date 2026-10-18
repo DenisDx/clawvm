@@ -23,23 +23,28 @@ because both contain OpenClaw credentials and configuration. See
 
 ## Workspace agent instructions
 
-[data/.openclaw/workspace/AGENTS.md](data/.openclaw/workspace/AGENTS.md) is
-the agent-facing guide in the persistent OpenClaw workspace. It describes
-available tools, usage, write locations, networking, and safety rules. Inside
-the VM, its path is `/home/clawvm/.openclaw/workspace/AGENTS.md`.
+[data/.openclaw/workspace/SYSTEM_DESCRIPTION.md](data/.openclaw/workspace/SYSTEM_DESCRIPTION.md)
+is the shared agent-facing reference for VM behavior, storage, safety, installed
+programs, and invocation examples. It includes the complete image-selected
+package inventory, dependency-provided command-line tools, Python imports,
+and known unusable wrappers. Keep it identical across forks of the same
+read-only software baseline; agents inside the VM must not edit it.
 
-The guide is read-only for repository agents. The proposed document-tool
-update is recorded in
+[data/.openclaw/workspace/AGENTS.md](data/.openclaw/workspace/AGENTS.md)
+is the per-instance agent entrypoint. The intended split keeps only machine
+identity, local restrictions, and a link to the shared reference there.
+Because this guide is read-only for repository agents, the exact proposed
+replacement is recorded in
 [data/.openclaw/workspace/AGENTS_.md](data/.openclaw/workspace/AGENTS_.md)
-with the exact old text, reason, and replacement. It covers PDF/OCR,
-`document-python`, graphics, Office formats, and email tools. **The correction
-still requires manual application to the original guide**; the companion is
-not automatically loaded as a replacement. Preserve any fork-specific
-instructions when applying it.
+and **still requires manual application**. Until then, the original guide
+retains its older common instructions; the companion is not automatically
+loaded in its place. Preserve each fork's specific mount and permission rules.
 
-These files are shared through the home bind mount, not baked into the image.
-Documentation changes require no image rebuild; agents must load the updated
-guide in their instruction context before relying on new guidance.
+Inside the VM, these files are at `/home/clawvm/.openclaw/workspace/`.
+They are shared through the home bind mount, not baked into the image.
+Documentation changes require no image rebuild. After manual application,
+agents must load the shortened guide and its shared reference into their
+instruction context.
 
 ## PDF, graphics, and document tools
 

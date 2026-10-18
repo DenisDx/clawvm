@@ -54,9 +54,13 @@ assuming a version from this document.
 - `/tmp` and `/run` are ephemeral tmpfs, normally limited to 64 MiB and 16 MiB
   and mounted `noexec`. Shared memory is normally 1 GiB. Check actual mounts
   with `findmnt` and available space with `df -h "$HOME" /tmp /dev/shm`.
-- For large conversions, create a task-specific temporary directory under
-  home and set `TMPDIR` to it. Native extensions and executable temporary
-  artifacts need an executable filesystem; do not weaken mount permissions.
+- `/tmp`, `/run`, and `/dev/shm` consume RAM, not persistent disk space.
+  Never put large downloads, archives, package installations, update snapshots,
+  or conversion output there. Create a task-specific directory under home,
+  verify that its filesystem is not tmpfs/ramfs, and set `TMPDIR`, `TMP`, and
+  `TEMP` for the command. Also set explicit output/cache paths for tools that
+  ignore these variables. Native extensions and executable temporary artifacts
+  need an executable filesystem; do not weaken mount permissions.
 - Inspect ACLs and ownership rather than changing them to bypass a denied
   write. Host ACLs and machine-specific instructions are authoritative.
 
@@ -496,11 +500,27 @@ If ownership/access prevents the targeted repair, ask the host operator.
 The following subshell uses the image Node explicitly, keeps the existing
 package as the update target, and pins both npm prefix environment spellings
 so a runtime handoff cannot redirect installation into `/usr/local`.
+It also creates a private, disk-backed temporary directory under the persistent
+home and exports `TMPDIR`, `TMP`, and `TEMP` for Node, npm, and child processes.
+This is mandatory for both preview and installation: the updater can require
+several GiB of scratch space, while `/tmp` is a small RAM-backed filesystem.
+Do not increase tmpfs size or ignore a capacity warning to work around this.
 It does not modify `.env`, npm configuration files, or the parent shell.
 
 ```bash
 (
   set -eu
+  umask 077
+  mkdir -p "$HOME/.local/state/openclaw-maintenance"
+  TMPDIR="$(mktemp -d "$HOME/.local/state/openclaw-maintenance/update.XXXXXXXX")"
+  export TMPDIR TMP="$TMPDIR" TEMP="$TMPDIR"
+  case "$(findmnt -T "$TMPDIR" -n -o FSTYPE)" in
+    ''|tmpfs|ramfs)
+      printf 'OpenClaw maintenance requires disk-backed temporary storage.\n' >&2
+      exit 1 ;;
+  esac
+  printf 'Maintenance temporary directory: %s\n' "$TMPDIR" >&2
+  df -h "$TMPDIR" "$HOME" >&2
   runtime="$(readlink -f "$HOME/.openclaw/tools/node/bin/node")"
   prefix="$(dirname "$(dirname "$runtime")")"
   case "$prefix" in
@@ -522,14 +542,20 @@ It does not modify `.env`, npm configuration files, or the parent shell.
 ```
 
 Check the reported installation root, current/target versions, actions, notes,
-and any preflight refusals. A dry run does not install packages, migrate them,
-or restart the Gateway; it is not proof that every later installation step
-will succeed. The updater may still record its diagnostic run.
+and any preflight refusals. If a capacity check still names `/tmp`, or available
+disk space is insufficient, stop before installation and inspect the child's
+environment. Keep the printed temporary directory and recovery files until
+the update and health checks succeed; then remove only that run's directory,
+not the entire maintenance directory or other tasks' files.
+A dry run does not install packages, migrate them, or restart the Gateway; it
+is not proof that every later installation step will succeed. The updater may
+still record its diagnostic run.
 
 ### 3. Update, then activate through the deployment owner
 
 Once the backup and plan are approved, repeat the same subshell with
-`--dry-run` removed from its final command. Keep `--no-restart`.
+`--dry-run` removed from its final command. Keep `--no-restart` and all of the
+temporary-directory and npm-prefix setup; do not run only its last line.
 Do not add `--yes` or `--accept-capabilities` without reviewing the downgrade
 or plugin-capability changes they approve.
 
@@ -555,6 +581,10 @@ plugin synchronization, or health checks fail, keep backups and report the
 exact failed step. Do not blindly retry a raw npm install, delete lock/state
 files, run `doctor --fix`, or roll back code over a migrated database.
 Follow the version-specific recovery procedure instead.
+An interrupted package activation can leave the normal package path absent
+while the old Gateway is still running. In that case, do not restart the VM
+until the operator has recovered a complete installation and verified that
+`openclaw --version` works. A healthy web page alone does not prove recovery.
 
 Official references:
 [OpenClaw updating](https://docs.openclaw.ai/install/updating) and

@@ -151,6 +151,14 @@ uses the image's Node runtime. A plain `npm install -g` under the image runtime
 defaults to `/usr/local` and is not this deployment's update procedure.
 Do not remove `/usr/local/bin/openclaw` to bypass a foreign-destination error.
 
+`/tmp`, `/run`, and `/dev/shm` are RAM-backed, not disk scratch space. Never
+use them for large downloads, package staging, update snapshots, or archives.
+The linked procedure creates a private directory under
+`~/.local/state/openclaw-maintenance`, verifies that it is not tmpfs/ramfs,
+and exports `TMPDIR`, `TMP`, and `TEMP`. Keep that setup for the actual update,
+not just its preview. Check free disk space and stop if the updater still
+selects `/tmp` or reports insufficient capacity; do not enlarge tmpfs.
+
 Operator sequence:
 
 1. Arrange a maintenance window and a consistent backup of the persistent
@@ -167,6 +175,9 @@ Operator sequence:
    Do not start a parallel Compose instance for a VM already managed by sndbx.
    Neither an image rebuild nor container recreation is required for this
    home-installed package update.
+   If installation fails or is interrupted, first verify that the normal
+   package and launcher are intact. Do not restart a still-running Gateway
+   over an absent or incomplete installation; recover through the operator.
 4. Verify `openclaw --version`, `openclaw gateway status --deep`,
    `openclaw gateway health`, the published web endpoint, and required channels.
    A previous owner lease can delay Gateway recovery by up to five minutes.

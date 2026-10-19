@@ -57,12 +57,23 @@ gateway_loop() {
 gateway_loop &
 gateway_supervisor_pid=$!
 
+caddy_pid=""
+
 # Stop the background Gateway supervisor with the container.
 cleanup() {
-	kill "${gateway_supervisor_pid}" 2>/dev/null || true
+	if [[ -n "${caddy_pid}" ]]; then
+		kill -TERM "${caddy_pid}" 2>/dev/null || true
+	fi
+	kill -TERM "${gateway_supervisor_pid}" 2>/dev/null || true
+	if [[ -n "${caddy_pid}" ]]; then
+		wait "${caddy_pid}" 2>/dev/null || true
+	fi
 	wait "${gateway_supervisor_pid}" 2>/dev/null || true
 }
 
 trap cleanup EXIT INT TERM
 
-caddy run --config "${proxy_config}" --adapter caddyfile
+caddy run --config "${proxy_config}" --adapter caddyfile &
+caddy_pid=$!
+
+wait "${caddy_pid}" || true

@@ -194,6 +194,22 @@ class OpenClawUpdateTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Run inside the VM as root or clawvm", result.stderr)
 
+    def test_unhealthy_sqlite_refused_before_update(self) -> None:
+        """Refuse maintenance when a state SQLite store fails its health check."""
+        state = self.home / ".openclaw/state"
+        state.mkdir()
+        (state / "openclaw.sqlite").write_bytes(b"not a sqlite database")
+        result = self.update()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unhealthy SQLite store", result.stderr)
+        self.assertFalse((self.home / "update-called").exists())
+        for _ in range(100):
+            if self.execute("bash", "-c", "ss -H -ltn 'sport = :18789'").stdout.strip():
+                break
+            time.sleep(0.2)
+        else:
+            self.fail("Supervisor did not restore the Gateway after an unhealthy state check.")
+
     def test_gateway_owned_invocation_refused(self) -> None:
         """Reject a tool shell descended from the Gateway being maintained."""
         (self.home / "ancestry-request").touch()

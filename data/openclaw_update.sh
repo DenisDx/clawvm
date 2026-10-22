@@ -33,7 +33,7 @@ fi
 cd "$HOME"
 source /usr/local/lib/clawvm/load-env.sh
 export PATH="$HOME/.openclaw/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-for command in python3 flock findmnt tar timeout ss getfacl; do
+for command in python3 flock findmnt tar timeout ss getfacl pgrep; do
     command -v "$command" >/dev/null || fail "Required image tool is missing: $command."
 done
 [[ -x /usr/local/bin/node ]] || fail 'The image Node runtime is missing.'
@@ -161,6 +161,44 @@ same_process() {
     [[ "${fields[19]}" == "$2" && "${fields[0]}" != Z ]]
 }
 
+# Verify that every OpenClaw SQLite store opens read-write after Gateway shutdown.
+check_state_databases() {
+    timeout --foreground 300 python3 - "$state" <<'PY'
+import pathlib
+import sqlite3
+import sys
+
+state = pathlib.Path(sys.argv[1])
+databases = []
+for pattern in ("*.sqlite", "state/*.sqlite", "agents/*/agent/*.sqlite"):
+    databases.extend(state.glob(pattern))
+failures = []
+checked = 0
+for database in sorted(set(databases)):
+    if not database.is_file() or database.is_symlink():
+        continue
+    if database.name.endswith(("-lock.sqlite", "-writer.sqlite", "-quarantine.sqlite")):
+        continue
+    checked += 1
+    try:
+        connection = sqlite3.connect(f"file:{database}?mode=rw", uri=True, timeout=30)
+        try:
+            result = connection.execute("PRAGMA schema_version").fetchone()
+        finally:
+            connection.close()
+    except Exception as error:
+        failures.append(f"{database}: {error}")
+        continue
+    if result is None:
+        failures.append(f"{database}: schema read returned no result")
+for failure in failures:
+    print(failure, file=sys.stderr)
+if failures:
+    raise SystemExit(1)
+print(f"Checked {checked} OpenClaw SQLite store(s).")
+PY
+}
+
 # Resume only the original verified supervisor; input: saved identity; output: status.
 resume_supervisor() {
     same_process "$supervisor_pid" "$supervisor_birth" || {
@@ -278,6 +316,8 @@ while true; do
     (( SECONDS < deadline )) || fail 'Gateway port remains occupied; installation was not attempted.'
     sleep 1
 done
+printf 'Checking the OpenClaw SQLite stores after Gateway shutdown.\n'
+check_state_databases || fail 'OpenClaw state has an unhealthy SQLite store; no backup or update was performed.'
 printf 'Creating and validating a cold OpenClaw state/package backup.\n'
 backup_paths=(.openclaw)
 backup_excludes=()
@@ -355,6 +395,17 @@ PY
     fi
     sleep 5
 done
-(( healthy )) || fail "Live Gateway verification failed; inspect $run/gateway-status.log and gateway-health.txt."
+if (( ! healthy )); then
+    printf 'Live Gateway verification failed; pausing the supervisor and stopping the Gateway.\n' >&2
+    if same_process "$supervisor_pid" "$supervisor_birth"; then
+        kill -STOP "$supervisor_pid" 2>/dev/null || true
+        paused=1
+    fi
+    safe_to_resume=0
+    while read -r live_gateway_pid; do
+        kill -TERM "${live_gateway_pid}" 2>/dev/null || true
+    done < <(pgrep -x openclaw-gatewa 2>/dev/null || true)
+    fail "Live Gateway verification failed; supervisor paused and Gateway stopped. Inspect $run/gateway-status.log and gateway-health.txt."
+fi
 printf 'SUCCESS: installed and live Gateway version %s; health check passed.\n' "$installed"
 printf 'Backup and private logs retained in %s. Keep them until you verify your channels and workflows.\n' "$run"

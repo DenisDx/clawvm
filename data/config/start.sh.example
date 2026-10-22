@@ -10,6 +10,21 @@ fi
 
 gateway_port="${OPENCLAW_GATEWAY_PORT:-18789}"
 gateway_restart_grace_seconds="${OPENCLAW_GATEWAY_RESTART_GRACE_SECONDS:-10}"
+gateway_startup_timeout_seconds="${OPENCLAW_GATEWAY_STARTUP_TIMEOUT_SECONDS:-600}"
+gateway_down_grace_seconds="${OPENCLAW_GATEWAY_DOWN_GRACE_SECONDS:-120}"
+gateway_retry_max_seconds="${OPENCLAW_GATEWAY_RETRY_MAX_SECONDS:-300}"
+gateway_term_grace_seconds="${OPENCLAW_GATEWAY_TERM_GRACE_SECONDS:-20}"
+
+for value in \
+	"${gateway_startup_timeout_seconds}" \
+	"${gateway_down_grace_seconds}" \
+	"${gateway_retry_max_seconds}" \
+	"${gateway_term_grace_seconds}"; do
+	[[ "${value}" =~ ^[0-9]+$ ]] || {
+		printf 'Invalid Gateway timeout value: %s\n' "${value}" >&2
+		exit 1
+	}
+done
 
 # Return success while a process owns the Gateway loopback port.
 gateway_is_listening() {
@@ -32,14 +47,114 @@ wait_for_external_gateway() {
 	return 1
 }
 
-# Recover the Gateway only when OpenClaw did not start its own replacement.
+# Recover a hot SQLite journal left by an unclean VM stop before any OpenClaw
+# process opens the state. Only OpenClaw's state stores are touched; browser
+# caches and temporary capture databases are deliberately ignored.
+recover_stale_sqlite_state() {
+	if ! timeout --foreground 120 python3 - "${HOME}/.openclaw" <<'PY'
+import pathlib
+import sqlite3
+import sys
+
+root = pathlib.Path(sys.argv[1])
+databases = []
+for pattern in ("*.sqlite", "state/*.sqlite", "agents/*/agent/*.sqlite"):
+    databases.extend(root.glob(pattern))
+
+for database in sorted(set(databases)):
+    if not database.is_file() or database.is_symlink():
+        continue
+    for suffix in ("-journal", "-wal"):
+        sidecar = pathlib.Path(f"{database}{suffix}")
+        if not sidecar.is_file() or sidecar.stat().st_size == 0:
+            continue
+        print(f"Recovering SQLite state for {database}.", file=sys.stderr)
+        try:
+            connection = sqlite3.connect(f"file:{database}?mode=rw", uri=True, timeout=30)
+            try:
+                result = connection.execute("PRAGMA schema_version").fetchone()
+            finally:
+                connection.close()
+        except Exception as error:
+            print(f"SQLite recovery failed for {database}: {error}", file=sys.stderr)
+            continue
+        if result is None:
+            print(f"SQLite schema read failed for {database}.", file=sys.stderr)
+PY
+	then
+		printf 'SQLite recovery did not complete; starting the Gateway anyway.\n' >&2
+	fi
+}
+
+# Stop one Gateway process without letting a failed startup linger forever.
+terminate_gateway() {
+	local pid="$1"
+	local deadline=$(( SECONDS + gateway_term_grace_seconds ))
+
+	kill -TERM "${pid}" 2>/dev/null || return 0
+	while kill -0 "${pid}" 2>/dev/null; do
+		if (( SECONDS >= deadline )); then
+			printf 'Gateway %s did not stop within %s seconds; forcing shutdown.\n' \
+				"${pid}" "${gateway_term_grace_seconds}" >&2
+			kill -KILL "${pid}" 2>/dev/null || true
+			return 0
+		fi
+		sleep 1
+	done
+}
+
+# Run the Gateway under this deployment's explicit external supervisor marker.
+# OpenClaw then skips its systemd/service and automatic-triage paths, which are
+# both unavailable or unsafe in this systemd-less VM.
 gateway_loop() {
+	local backoff=5
+	local consecutive_failures=0
+	local gateway_pid=""
+	local gateway_status started_at last_listened ever_listened
+
+	trap 'if [[ -n "${gateway_pid}" ]]; then
+		kill -TERM "${gateway_pid}" 2>/dev/null || true
+		wait "${gateway_pid}" 2>/dev/null || true
+	fi
+	exit 143' INT TERM
+
 	while true; do
-		if openclaw gateway --allow-unconfigured --bind loopback --port "${gateway_port}"; then
+		started_at=$SECONDS
+		last_listened=$SECONDS
+		ever_listened=0
+		gateway_status=0
+
+		OPENCLAW_SUPERVISOR_MODE=external \
+			openclaw gateway --allow-unconfigured --bind loopback --port "${gateway_port}" &
+		gateway_pid=$!
+		printf '%s\n' "${gateway_pid}" > /run/clawvm-gateway.pid 2>/dev/null || true
+
+		while kill -0 "${gateway_pid}" 2>/dev/null; do
+			if gateway_is_listening; then
+				ever_listened=1
+				last_listened=$SECONDS
+			elif (( ever_listened == 0 && SECONDS - started_at >= gateway_startup_timeout_seconds )); then
+				printf 'OpenClaw Gateway did not listen within %s seconds; terminating startup.\n' \
+					"${gateway_startup_timeout_seconds}" >&2
+				terminate_gateway "${gateway_pid}"
+				break
+			elif (( SECONDS - last_listened >= gateway_down_grace_seconds )); then
+				printf 'OpenClaw Gateway stopped listening for %s seconds; terminating it.\n' \
+					"${gateway_down_grace_seconds}" >&2
+				terminate_gateway "${gateway_pid}"
+				break
+			fi
+
+			sleep 1
+		done
+
+		if wait "${gateway_pid}" 2>/dev/null; then
 			gateway_status=0
 		else
 			gateway_status=$?
 		fi
+		gateway_pid=""
+		rm -f /run/clawvm-gateway.pid
 
 		printf 'OpenClaw Gateway exited with status %s; waiting for a replacement.\n' "${gateway_status}" >&2
 		if wait_for_external_gateway; then
@@ -51,8 +166,26 @@ gateway_loop() {
 		else
 			printf 'No OpenClaw Gateway replacement appeared; starting recovery.\n' >&2
 		fi
+
+		if (( ever_listened )); then
+			consecutive_failures=0
+			backoff=5
+		else
+			((consecutive_failures += 1))
+		fi
+
+		printf 'Gateway recovery will start in %s second(s) (consecutive failed startups: %s).\n' \
+			"${backoff}" "${consecutive_failures}" >&2
+		sleep "${backoff}"
+		if (( backoff * 2 < gateway_retry_max_seconds )); then
+			backoff=$((backoff * 2))
+		else
+			backoff="${gateway_retry_max_seconds}"
+		fi
 	done
 }
+
+recover_stale_sqlite_state
 
 gateway_loop &
 gateway_supervisor_pid=$!

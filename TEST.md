@@ -143,7 +143,7 @@ other OpenClaw credential paths.
 
 ## 10. sndbx
 
-Build `clawvm:latest`, merge `config.sndbx.json5`, and start the `clawvm`
+Build `clawvm:latest`, merge `sndbx.overlay.json5`, and start the `clawvm`
 sandbox. Verify that `/home/clawvm` is the only persistent writable mount,
 `/tmp` and `/run` are tmpfs, `/dev/shm` has the configured `CLAWVM_SHM_SIZE`,
 and the root filesystem is read-only. Repeat the portable-home, Chromium, and

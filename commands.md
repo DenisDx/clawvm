@@ -140,7 +140,7 @@ docker compose exec clawvm bash -lc '
 docker build -t clawvm:latest .
 ```
 
-Merge `config.sndbx.json5` into the root configuration, set
+Merge `sndbx.overlay.json5` into the root configuration, set
 `CLAWVM_HOST_ROOT`, then start the `clawvm` sandbox with the normal sndbx
 operator command or UI.
 

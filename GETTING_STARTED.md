@@ -56,7 +56,7 @@ The active root `config.json5` already registers the `clawvm` sandbox and the
 `clawvm-env-token` environment. Start the sandbox through the sndbx Web UI or
 the existing MCP `sandbox_start` operation, then open an sndbx console for that
 sandbox. When using a different sndbx installation, merge
-`images/clawvm/config.sndbx.json5` into its root configuration and set
+`images/clawvm/sndbx.overlay.json5` into its root configuration and set
 `CLAWVM_HOST_ROOT` to the absolute ClawVM checkout path.
 
 sndbx-only port settings belong in the root sndbx `.env`:

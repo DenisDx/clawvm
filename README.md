@@ -381,7 +381,7 @@ Build the local image first:
 docker build -t clawvm:latest .
 ```
 
-Merge `config.sndbx.json5` into the root sndbx configuration and set
+Merge `sndbx.overlay.json5` into the root sndbx configuration and set
 `CLAWVM_HOST_ROOT` to this checkout's absolute path. The template requires the
 root sndbx feature `read_only_rootfs` and its `tmpfs` list. Start the `clawvm`
 sandbox, then use an sndbx console to run the same OpenClaw installation steps

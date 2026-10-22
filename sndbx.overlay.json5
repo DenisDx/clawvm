@@ -1,0 +1,98 @@
+// sndbx per-image overlay generated from the root config.
+// Sandbox ids: clawvm
+// These are VM defaults. The root config wins every conflict; a root
+// array replaces this list entirely. run_at_startup is owned by the root.
+{
+  "sandboxes": {
+    "items": {
+      "clawvm": {
+        "title": "ClawVM OpenClaw host",
+        "image": "clawvm:latest",
+        "memory": "${CLAWVM_MEMORY:-4G}",
+        "cpus": ${CLAWVM_CPUS:-2},
+        "disk_max": "${CLAWVM_DISK_MAX:-20G}",
+        "network_traffic_max": "${CLAWVM_NETWORK_TRAFFIC_MAX:-100G}",
+        "persistent": true,
+        "configure_apt_mirror": false,
+        "ssh_keys": [],
+        "ssh_user": "clawvm",
+        "ssh_setup_via_image_hook": true,
+        "runtime_contract": {
+          "version": 1,
+          "environment": {
+            "CLAWVM_HTTPS_HOST": "${CLAWVM_HTTPS_HOST:-127.0.0.1}",
+            "CLAWVM_HTTPS_PORT": "${CLAWVM_HTTPS_PORT:-8880}",
+            "OPENCLAW_GATEWAY_PORT": "${CLAWVM_GATEWAY_PORT:-18789}"
+          }
+        },
+        "read_only_rootfs": true,
+        "shm_size": "${CLAWVM_SHM_SIZE:-1g}",
+        "tmpfs": [
+          "/tmp:rw,noexec,nosuid,size=64m",
+          "/run:rw,noexec,nosuid,size=16m"
+        ],
+        "shared_directories": [
+          {
+            "host_path": "${SNDBX_ROOT}/images/clawvm/data",
+            "guest_path": "/home/clawvm",
+            "mount_type": "dir",
+            "source_type": "directory",
+            "permission": "rw",
+            "required": true,
+            "create_if_missing": true
+          },
+          {
+            "host_path": "${SNDBX_ROOT}/images/clawvm/.env",
+            "guest_path": "/home/clawvm/.env",
+            "mount_type": "file",
+            "source_type": "file",
+            "permission": "ro",
+            "required": false
+          }
+        ],
+        "port_bindings": [
+          {
+            "bind_host": "${CLAWVM_SSH_BIND_HOST:-0.0.0.0}",
+            "vm_port": 22,
+            "publish_port": ${CLAWVM_SSH_HOST_PORT:-2222}
+          },
+          {
+            "bind_host": "${CLAWVM_HTTP_BIND_HOST:-0.0.0.0}",
+            "vm_port": 80,
+            "publish_port": ${CLAWVM_HTTP_HOST_PORT:-80}
+          },
+          {
+            "bind_host": "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
+            "vm_port": ${CLAWVM_HTTPS_PORT:-8880},
+            "publish_port": ${CLAWVM_HTTPS_HOST_PORT:-8880}
+          },
+          {
+            "bind_host": "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
+            "vm_port": 8881,
+            "publish_port": 8881
+          },
+          {
+            "bind_host": "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
+            "vm_port": 8882,
+            "publish_port": 8882
+          },
+          {
+            "bind_host": "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
+            "vm_port": 8883,
+            "publish_port": 8883
+          },
+          {
+            "bind_host": "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
+            "vm_port": 8884,
+            "publish_port": 8884
+          },
+          {
+            "bind_host": "${CLAWVM_HTTPS_BIND_HOST:-0.0.0.0}",
+            "vm_port": 8885,
+            "publish_port": 8885
+          }
+        ]
+      }
+    }
+  }
+}

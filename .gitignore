@@ -24,3 +24,9 @@ __pycache__/
 !data/.openclaw/workspace/
 data/.openclaw/workspace/*
 !data/.openclaw/workspace/SYSTEM_DESCRIPTION.md
+
+# aiset sidecars for the host-only sandbox overlay
+sndbx.overlay.json5.lock
+sndbx.overlay.json5.back*
+sndbx.overlay.json5.conflicted.*.back
+config.sndbx.json5.pre-overlay.bak

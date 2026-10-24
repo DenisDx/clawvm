@@ -250,6 +250,20 @@ if (not isinstance(plan, dict) or plan.get("dryRun") is not True
         or plan.get("root") != sys.argv[2] or plan.get("downgradeRisk") is not False
         or plan.get("run", {}).get("reason") != "dry-run"):
     raise SystemExit("Unexpected/refused preview or downgrade; inspect preview.json before updating.")
+failures = plan.get("failures")
+if failures:
+    for failure in failures if isinstance(failures, list) else [failures]:
+        if isinstance(failure, dict):
+            reason = failure.get("reason", "unknown")
+            message = failure.get("message", "")
+        else:
+            reason, message = "unknown", str(failure)
+        print(f"Preview refusal [{reason}]: {message}", file=sys.stderr)
+    raise SystemExit("Preview refused this update; resolve the listed checks before retrying.")
+for note in plan.get("notes") or []:
+    if isinstance(note, str) and "Would refuse update:" in note:
+        print(f"Preview refusal: {note}", file=sys.stderr)
+        raise SystemExit("Preview refused this update; resolve the listed checks before retrying.")
 target = plan.get("targetVersion", "")
 if not isinstance(target, str) or not re.fullmatch(r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?", target):
     raise SystemExit("Preview has no supported exact package version.")

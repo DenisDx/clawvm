@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG NODE_IMAGE=node:24-bookworm
+ARG NODE_IMAGE=node:26.12.1-bookworm
 FROM ${NODE_IMAGE}
 
 ARG YQ_VERSION=v4.45.4
@@ -116,6 +116,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends caddy \
     && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && locale-gen \
+    && npm install --global "corepack@0.36.0" \
     && corepack enable \
     && architecture="$(dpkg --print-architecture)" \
     && test "${architecture}" = "amd64" \
